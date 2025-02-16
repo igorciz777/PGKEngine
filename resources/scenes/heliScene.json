@@ -1,0 +1,158 @@
+{
+    "scene": {
+        "name": "HelicopterScene",
+        "background": [135, 206, 235],
+        "objects": [
+            {
+                "type": "StaticObject",
+                "name": "Terrain",
+                "mesh": "terrain.obj",
+                "texture": "terrain.jpg",
+                "position": [0, 0, 0]
+            },
+            {
+                "type": "GameObject",
+                "name": "PlayerHelicopter",
+                "mesh": "heli.obj",
+                "texture": "heli.png",
+                "position": [0, 15, 0],
+                "components": [
+                    {
+                        "type": "HeliControls",
+                        "properties": {
+                            "speed": 10,
+                            "lift": 5
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "GameObject",
+                "name": "HeliRotor",
+                "mesh": "rotor.obj",
+                "texture": "heli.png",
+                "components": [
+                    {
+                        "type": "Rotor",
+                        "properties": {
+                            "speed": 10
+                        }
+                    }
+                ],
+                "attachTo": [
+                    {
+                        "object": "PlayerHelicopter",
+                        "position": [0, 0, 0]
+                    }
+                ]
+            },
+            {
+                "type": "StaticObject",
+                "name": "house1",
+                "mesh": "house.obj",
+                "texture": "house.png",
+                "position": [-14, 8.9, 5],
+                "rotation": [0.39, 0, 0]
+            },
+            {
+                "type": "StaticObject",
+                "name": "house2",
+                "mesh": "house.obj",
+                "texture": "house.png",
+                "position": [49, -0.9, 0],
+                "rotation": [0, -0.6, 0]
+            },
+            {
+                "type": "StaticObject",
+                "name": "house3",
+                "mesh": "house.obj",
+                "texture": "house.png",
+                "position": [-5, 0.4, 61],
+                "rotation": [0, -1.36, 0]
+            },
+            {
+                "type": "StaticObject",
+                "name": "house4",
+                "mesh": "house.obj",
+                "texture": "house.png",
+                "position": [-1.4, 0.9, 62],
+                "rotation": [0, -1.6, 0]
+            },
+            {
+                "type": "StaticObject",
+                "name": "house5",
+                "mesh": "house.obj",
+                "texture": "house.png",
+                "position": [4, 1.5, 64.9],
+                "rotation": [0, -1.9, 0]
+            },
+            {
+                "type": "StaticObject",
+                "name": "house6",
+                "mesh": "house.obj",
+                "texture": "house.png",
+                "position": [-62, -1, 0],
+                "rotation": [0, 1.25, 0]
+            },
+            {
+                "type": "StaticObject",
+                "name": "forest1",
+                "mesh": "forest.obj",
+                "texture": "tree.png",
+                "position": [0, -1.4, -44]
+            },
+            {
+                "type": "StaticObject",
+                "name": "forest2",
+                "mesh": "forest.obj",
+                "texture": "tree.png",
+                "position": [15, -0.73, -46]
+            },
+            {
+                "type": "StaticObject",
+                "name": "forest3",
+                "mesh": "forest.obj",
+                "texture": "tree.png",
+                "position": [0, 0.15, 56.66],
+                "rotation": [-0.16, 0, 0]
+            },
+            {
+                "type": "StaticObject",
+                "name": "forest4",
+                "mesh": "forest.obj",
+                "texture": "tree.png",
+                "position": [-54.426, -1.1408, 0]
+            },
+            {
+                "type": "StaticObject",
+                "name": "forest5",
+                "mesh": "forest.obj",
+                "texture": "tree.png",
+                "position": [52.515, -1.3455, 0]
+            },
+            {
+                "type": "StaticObject",
+                "name": "forest6",
+                "mesh": "forest.obj",
+                "texture": "tree.png",
+                "position": [-39.863, 1.4, 41.392],
+                "rotation": [0, 0, -0.16]
+            }
+        ],
+        "lights": [
+            {
+                "position": [0, 100, 100],
+                "color": [251, 255, 168],
+                "intensity": 1,
+                "main": true
+            }
+        ],
+        "camera": {
+            "type": "AttachedCamera",
+            "properties": {
+                "target": "PlayerHelicopter",
+                "offset": [0, 1, -10]
+            }
+        }
+    }
+}
