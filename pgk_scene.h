@@ -21,6 +21,7 @@ public:
 
 private:
     std::shared_ptr<PGK_GameObject> rootObject;
+    std::vector<Triangle> triangleBuffer;
     std::vector<PGK_Light> lights;
     std::shared_ptr<PGK_Camera> camera;
     QColor sceneBackgroundColor;
@@ -32,6 +33,8 @@ private:
     void parseLight(const QJsonObject& light);
     void parseCamera(const QJsonObject& camera);
     std::shared_ptr<PGK_GameObject> findObjectByName(const QString& name);
+
+    uint64_t triangleBufferSize=0;
 };
 
 #endif // PGK_SCENE_H

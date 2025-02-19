@@ -44,10 +44,14 @@ public:
     Mat4 getWorldTransform() const;
 
     void update(float &deltaTime);
-    void render(PGK_View *view, const Mat4& viewMatrix, const Mat4& projViewMatrix, const Vec3& cameraPos, const std::vector<PGK_Light> &lights);
+    void getTriangleBuffer(std::vector<Triangle> &triangleBuffer, PGK_View *view, const Mat4& viewMatrix, const Mat4& projectionMatrix);
+    uint64_t calcTriangleBufferSize();
 
     void addRigidbody(std::shared_ptr<PGK_Rigidbody> rigidbody);
     std::shared_ptr<PGK_Rigidbody> getRigidbody() const;
+
+    bool receiveShadows=false;
+    bool castShadows=false;
 
 private:
     QString name;
@@ -58,9 +62,6 @@ private:
     Vec3 localScale;
 
     std::vector<Mesh> gameObjectMesh;
-    std::vector<Vec4> clippedVertices;
-    std::vector<Vec4> clippedNormals;
-
     bool isVisible=true;
 
     PGK_GameObject* parent;

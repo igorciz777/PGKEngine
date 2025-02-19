@@ -13,6 +13,7 @@ public:
     QColor ambientColor = QColor(80, 80, 80);
     QColor diffuseColor = QColor(200, 200, 200);
     QColor specularColor = QColor(255, 255, 255);
+    bool castShadows = false;
 };
 
 #endif // PGK_LIGHT_H

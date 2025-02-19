@@ -11,8 +11,10 @@ typedef struct PGK_CORE
     bool SCALABLE = false;
     bool TEX_FILTERING = true;
     bool SMOOTH_SHADING = true;
+    bool RAYCAST_SHADOWS = false;
     float ASPECT_RATIO = 4.f / 3.f;
     float REFRESH_RATE = 60;
+    float SHADOW_DRAW_DISTANCE = 250.0f;
 } PGK_CORE;
 
 extern PGK_CORE g_pgkCore;

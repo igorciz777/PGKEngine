@@ -3,7 +3,7 @@ A basic software renderer game engine written as a project for a basics of compu
 
 The name, PGK, stands for "Podstawy grafiki komputerowej" - the name of the uni class in polish.
 
-This project is mostly a learning experience and in no way a feature-complete and stable implementation of a software renderer or a game engine, the code might also not be readable and up to standard due to the quickly put together nature of the project :)
+This project is mostly a learning experience and in no way a feature-complete and stable implementation of a software renderer or a game engine.
 
 # Made in
 - Qt6
@@ -15,9 +15,12 @@ This project is mostly a learning experience and in no way a feature-complete an
 - Basic component system
 - Loading scenes from .json files
 - Backface culling
+- Z-buffering
 - Flat and Blinn-Phong shading
 - Freefly and Attached camera modes
 - Parsing .obj and .mtl files
+- Texture mapping
+- Raycast shadows
 
 # Screenshot examples
 - Default scene @ 640x480

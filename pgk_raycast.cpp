@@ -1,30 +1,45 @@
 #include "pgk_raycast.h"
+#include "pgk_gameobject.h"
 
+RaycastHit PGK_Raycast::raycast(const Vec3 &orig, const Vec3 &dir, const float &length, const std::vector<std::shared_ptr<PGK_GameObject> > &gameObjects)
+{
+    RaycastHit hit;
+    hit.distance = length;
+    for (const auto& gameObject : gameObjects) {
+        if (gameObject->getMeshes().size() > 0) {
+            for (const auto& mesh : gameObject->getMeshes()) {
+                for (size_t i = 0; i < mesh.indices.size(); i += 3) {
+                    Vec3 v0 = mesh.vertices[mesh.indices[i]].position;
+                    Vec3 v1 = mesh.vertices[mesh.indices[i + 1]].position;
+                    Vec3 v2 = mesh.vertices[mesh.indices[i + 2]].position;
 
-bool PGK_Raycast::intersectTriangle(
-    const Vec3& origin, const Vec3& direction,
-    const Vec3& v0, const Vec3& v1, const Vec3& v2,
-    float& t, Vec3& normal
-    ) {
-    Vec3 edge1 = v1 - v0;
-    Vec3 edge2 = v2 - v0;
-    Vec3 h = direction.cross(edge2);
-    float a = edge1.dot(h);
+                    Vec3 e1 = v1 - v0;
+                    Vec3 e2 = v2 - v0;
+                    Vec3 p = dir.cross(e2);
+                    float det = e1.dot(p);
 
-    if (std::abs(a) < EPS) return false;
+                    if (det > -EPS && det < EPS) continue;
 
-    float f = 1.0f / a;
-    Vec3 s = origin - v0;
-    float u = f * s.dot(h);
-    if (u < 0 || u > 1) return false;
+                    float invDet = 1.0f / det;
+                    Vec3 t = orig - v0;
+                    float u = t.dot(p) * invDet;
+                    if (u < 0 || u > 1) continue;
 
-    Vec3 q = s.cross(edge1);
-    float v = f * direction.dot(q);
-    if (v < 0 || u + v > 1) return false;
+                    Vec3 q = t.cross(e1);
+                    float v = dir.dot(q) * invDet;
+                    if (v < 0 || u + v > 1) continue;
 
-    t = f * edge2.dot(q);
-    if (t < EPS) return false;
-
-    normal = edge1.cross(edge2).normalize();
-    return true;
+                    float distance = e2.dot(q) * invDet;
+                    if (distance < hit.distance && distance < length) {
+                        hit.hit = true;
+                        hit.distance = distance;
+                        hit.point = orig + dir * distance;
+                        hit.normal = e1.cross(e2).normalize();
+                        hit.barycentric = Vec3(1 - u - v, u, v);
+                    }
+                }
+            }
+        }
+    }
+    return hit;
 }

@@ -1,6 +1,7 @@
 #ifndef PGK_MATH_H
 #define PGK_MATH_H
 
+
 #include <cmath>
 #include <immintrin.h>
 #include <qcolor.h>
@@ -626,19 +627,10 @@ typedef T_Quat<double> dQuat;
 template <class T>
 const T_Quat<T> T_Quat<T>::IDENTITY(0, 0, 0, 1);
 
-struct Triangle{
-    const Vec3 worldPosition;
-    const Vec4 v0,v1,v2;
-    const Vec3 ndc0,ndc1,ndc2;
-    const Vec3 s0,s1,s2;
-    const Vec3 n0,n1,n2;
-    const Vec2 uv0,uv1,uv2;
-};
-
 namespace PGK_Math
 {
     template <class T>
-    const T_Mat4<T> worldMatrix(const T_Vec3<T> &pos, const T_Quat<T> &rot, const T_Vec3<T> &scale){
+    inline const T_Mat4<T> worldMatrix(const T_Vec3<T> &pos, const T_Quat<T> &rot, const T_Vec3<T> &scale){
         return T_Mat4<T>(scale.x * (1 - 2 * rot.y * rot.y - 2 * rot.z * rot.z), scale.x * (2 * rot.x * rot.y - 2 * rot.z * rot.w), scale.x * (2 * rot.x * rot.z + 2 * rot.y * rot.w), pos.x,
                          scale.y * (2 * rot.x * rot.y + 2 * rot.z * rot.w), scale.y * (1 - 2 * rot.x * rot.x - 2 * rot.z * rot.z), scale.y * (2 * rot.y * rot.z - 2 * rot.x * rot.w), pos.y,
                          scale.z * (2 * rot.x * rot.z - 2 * rot.y * rot.w), scale.z * (2 * rot.y * rot.z + 2 * rot.x * rot.w), scale.z * (1 - 2 * rot.x * rot.x - 2 * rot.y * rot.y), pos.z,
@@ -646,7 +638,7 @@ namespace PGK_Math
     }
 
     template <class T>
-    const T_Mat4<T> viewportMatrix(const int &x, const int &y, const int &w, const int &h, const T &near, const T &far){
+    inline const T_Mat4<T> viewportMatrix(const int &x, const int &y, const int &w, const int &h, const T &near, const T &far){
         return T_Mat4<T>(w/2, 0, 0, x + w/2,
                          0, h/2, 0, y + h/2,
                          0, 0, (far - near)/2, (far + near)/2,
@@ -654,7 +646,16 @@ namespace PGK_Math
     }
 
     template <class T>
-    const T_Mat4<T> lookAtMatrix(const T_Vec3<T> &pos, const T_Vec3<T> &target, const T_Vec3<T> &up){
+    inline const T_Mat4<T> normalMatrix(const T_Mat4<T> &worldTransform){
+        T_Mat4<T> rotMat = worldTransform;
+        rotMat.m30 = 0;
+        rotMat.m31 = 0;
+        rotMat.m32 = 0;
+        return rotMat.inverse().transpose();
+    }
+
+    template <class T>
+    inline const T_Mat4<T> lookAtMatrix(const T_Vec3<T> &pos, const T_Vec3<T> &target, const T_Vec3<T> &up){
         T_Vec3<T> z = (pos - target).normalize();
         T_Vec3<T> x = up.cross(z).normalize();
         T_Vec3<T> y = z.cross(x);
@@ -676,6 +677,30 @@ namespace PGK_Math
     inline float lerp(const float &a, const float &b, const float &t){ return a * (1 - t) + b * t; }
     inline Vec3 biLerp(const Vec3 &p00, const Vec3 &p10, const Vec3 &p01, const Vec3 &p11, const float &a, const float &b){ return p00 * (1 - a) * (1 - b) + p10 * a * (1 - b) + p01 * (1 - a) * b + p11 * a * b; }
     uint64_t fastpow(uint64_t base, uint64_t power);
+    inline bool intersectTriangle(const Vec3& rayOrigin, const Vec3& rayDir, const Vec3& v0, const Vec3& v1, const Vec3& v2, float& t)
+    {
+        const float EPSILON = 0.000001f;
+        const Vec3 edge1 = v1 - v0;
+        const Vec3 edge2 = v2 - v0;
+        const Vec3 h = rayDir.cross(edge2);
+        const float a = edge1.dot(h);
+
+        if (a > -EPSILON && a < EPSILON) return false;
+
+        const float f = 1.0f / a;
+        const Vec3 s = rayOrigin - v0;
+        const float u = f * s.dot(h);
+
+        if (u < 0.0f || u > 1.0f) return false;
+
+        const Vec3 q = s.cross(edge1);
+        const float v = f * rayDir.dot(q);
+
+        if (v < 0.0f || u + v > 1.0f) return false;
+
+        t = f * edge2.dot(q);
+        return t > EPSILON;
+    }
 };
 
 #endif // PGK_MATH_H

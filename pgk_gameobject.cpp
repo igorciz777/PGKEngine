@@ -1,5 +1,4 @@
 #include "pgk_gameobject.h"
-#include "pgk_draw.h"
 
 #include <QThread>
 
@@ -10,7 +9,7 @@ PGK_GameObject::PGK_GameObject()
 }
 
 PGK_GameObject::~PGK_GameObject() {
-    for (auto& child : children) {
+    for (const auto& child : children) {
         child->setParent(nullptr);
     }
 }
@@ -46,12 +45,6 @@ void PGK_GameObject::setLocalScale(const Vec3& scale) {
 void PGK_GameObject::setMeshes(const std::vector<Mesh> &meshes)
 {
     this->gameObjectMesh = meshes;
-    uint32_t verticesSize = 0;
-    for (const auto& mesh : meshes) {
-        verticesSize += mesh.vertices.size();
-    }
-    this->clippedVertices.resize(verticesSize);
-    this->clippedNormals.resize(verticesSize);
     this->isVisible = true;
 }
 
@@ -133,65 +126,82 @@ void PGK_GameObject::update(float &deltaTime) {
     }
 
     // Update children
-    for (auto& child : children) {
+    for (const auto& child : children) {
         child->update(deltaTime);
     }
 }
 
-void PGK_GameObject::render(PGK_View *view, const Mat4& viewMatrix, const Mat4 &projViewMatrix, const Vec3& cameraPos, const std::vector<PGK_Light> &lights) {
-    for (auto& child : children) {
-        child->render(view,viewMatrix,projViewMatrix,cameraPos,lights);
+void PGK_GameObject::getTriangleBuffer(std::vector<Triangle> &triangleBuffer, PGK_View *view, const Mat4 &viewMatrix, const Mat4 &projectionMatrix)
+{
+    for (const auto& child : children) {
+        child->getTriangleBuffer(triangleBuffer,view,viewMatrix,projectionMatrix);
     }
     if(!isVisible) return;
     const Mat4 worldTransform = getWorldTransform();
-    const Mat4 modelViewInvTrs = (viewMatrix * worldTransform.inverse()).transpose();
-    const Mat4 projModelView = projViewMatrix * worldTransform;
+    const Mat4 modelViewInvTrs = PGK_Math::normalMatrix(worldTransform);
 
     for(size_t i = 0; i < this->gameObjectMesh.size(); i++) {
-        Mesh mesh = this->gameObjectMesh[i];
-        for (size_t i = 0; i < mesh.vertices.size(); i++) {
-            this->clippedVertices[i] = projModelView * Vec4(mesh.vertices[i].position);
-            this->clippedNormals[i] = modelViewInvTrs * Vec4(mesh.vertices[i].normal);
-        }
+        const Mesh mesh = this->gameObjectMesh[i];
+        std::shared_ptr<Material> materialPtr = std::make_shared<Material>(mesh.material);
+
         for (size_t i = 0; i < mesh.indices.size(); i += 3) {
-            if(clippedVertices[mesh.indices[i]].w   < view->nearClip) continue;
-            if(clippedVertices[mesh.indices[i+1]].w < view->nearClip) continue;
-            if(clippedVertices[mesh.indices[i+2]].w < view->nearClip) continue;
-            if(clippedVertices[mesh.indices[i]].w   > view->farClip)  continue;
-            if(clippedVertices[mesh.indices[i+1]].w > view->farClip)  continue;
-            if(clippedVertices[mesh.indices[i+2]].w > view->farClip)  continue;
+            const Vec4 v0 = worldTransform * Vec4(mesh.vertices[mesh.indices[i]].position);
+            const Vec4 v1 = worldTransform * Vec4(mesh.vertices[mesh.indices[i+1]].position);
+            const Vec4 v2 = worldTransform * Vec4(mesh.vertices[mesh.indices[i+2]].position);
 
-            Vec3 ndc0 = PGK_Math::clipToNDC(clippedVertices[mesh.indices[i]]);
-            Vec3 ndc1 = PGK_Math::clipToNDC(clippedVertices[mesh.indices[i + 1]]);
-            Vec3 ndc2 = PGK_Math::clipToNDC(clippedVertices[mesh.indices[i + 2]]);
+            const Vec4 clipped0 = projectionMatrix * viewMatrix * v0;
+            const Vec4 clipped1 = projectionMatrix * viewMatrix * v1;
+            const Vec4 clipped2 = projectionMatrix * viewMatrix * v2;
 
-            // if(ndc0.z < -view->nearClip || ndc0.z > view->farClip) continue;
-            // if(ndc1.z < -view->nearClip || ndc1.z > view->farClip) continue;
-            // if(ndc2.z < -view->nearClip || ndc2.z > view->farClip) continue;
+            if(clipped0.w < view->nearClip) continue;
+            if(clipped1.w < view->nearClip) continue;
+            if(clipped2.w < view->nearClip) continue;
+            if(clipped0.w > view->farClip)  continue;
+            if(clipped1.w > view->farClip)  continue;
+            if(clipped2.w > view->farClip)  continue;
 
-            Vec3 screen0 = PGK_Math::projectionToScreen(ndc0, view->resWidth, view->resHeight, view->nearClip, view->farClip);
-            Vec3 screen1 = PGK_Math::projectionToScreen(ndc1, view->resWidth, view->resHeight, view->nearClip, view->farClip);
-            Vec3 screen2 = PGK_Math::projectionToScreen(ndc2, view->resWidth, view->resHeight, view->nearClip, view->farClip);
+            const Vec3 ndc0 = PGK_Math::clipToNDC(clipped0);
+            const Vec3 ndc1 = PGK_Math::clipToNDC(clipped1);
+            const Vec3 ndc2 = PGK_Math::clipToNDC(clipped2);
+
+            const Vec4 n0 = (modelViewInvTrs * Vec4(mesh.vertices[mesh.indices[i]].normal)).normalize();
+            const Vec4 n1 = (modelViewInvTrs * Vec4(mesh.vertices[mesh.indices[i+1]].normal)).normalize();
+            const Vec4 n2 = (modelViewInvTrs * Vec4(mesh.vertices[mesh.indices[i+2]].normal)).normalize();
+
+            const Vec3 screen0 = PGK_Math::projectionToScreen(ndc0, view->resWidth, view->resHeight, view->nearClip, view->farClip);
+            const Vec3 screen1 = PGK_Math::projectionToScreen(ndc1, view->resWidth, view->resHeight, view->nearClip, view->farClip);
+            const Vec3 screen2 = PGK_Math::projectionToScreen(ndc2, view->resWidth, view->resHeight, view->nearClip, view->farClip);
 
             if((ndc1 - ndc0).cross(ndc2 - ndc0).z < 0) continue;
 
-            Triangle t = {
-                Vec3(worldTransform.m03, worldTransform.m13, worldTransform.m23),
-                clippedVertices[mesh.indices[i]],
-                clippedVertices[mesh.indices[i+1]],
-                clippedVertices[mesh.indices[i+2]],
+            const Triangle t = {
+                this->receiveShadows,
+                this->castShadows,
+                (v0+v1+v2)/3.0f,
+                v0,v1,v2,
                 ndc0,ndc1,ndc2,
                 screen0,screen1,screen2,
-                clippedNormals[mesh.indices[i]],
-                clippedNormals[mesh.indices[i+1]],
-                clippedNormals[mesh.indices[i+2]],
+                n0,n1,n2,
                 mesh.vertices[mesh.indices[i]].texCoord,
                 mesh.vertices[mesh.indices[i + 1]].texCoord,
-                mesh.vertices[mesh.indices[i + 2]].texCoord
+                mesh.vertices[mesh.indices[i + 2]].texCoord,
+                materialPtr
             };
-            PGK_Draw::drawTriangle(view->canvas, mesh.material, t, view->_zbuffer, lights, cameraPos);
+            triangleBuffer.push_back(t);
         }
     }
+}
+
+uint64_t PGK_GameObject::calcTriangleBufferSize()
+{
+    uint64_t count = 0;
+    for (const auto& child : children) {
+        count += child->calcTriangleBufferSize();
+    }
+    for(const auto& mesh : this->getMeshes()){
+        count += mesh.indices.size();
+    }
+    return count;
 }
 
 void PGK_GameObject::addRigidbody(std::shared_ptr<PGK_Rigidbody> rigidbody) {

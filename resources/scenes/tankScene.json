@@ -20,36 +20,13 @@
                 "position": [0, 15, 0],
                 "components": [
                     {
-                        "type": "HeliControls",
-                        "properties": {
-                            "speed": 10,
-                            "lift": 5
-                        }
-                    }
-                ],
-                "cast_shadow": true,
-                "receive_shadow": false
-            },
-            {
-                "type": "GameObject",
-                "name": "HeliRotor",
-                "mesh": "rotor.obj",
-                "texture": "heli.png",
-                "components": [
-                    {
-                        "type": "Rotor",
+                        "type": "TankControls",
                         "properties": {
                             "speed": 10
                         }
                     }
                 ],
-                "attachTo": [
-                    {
-                        "object": "PlayerHelicopter",
-                        "position": [0, 0, 0]
-                    }
-                ],
-                "cast_shadow": false,
+                "cast_shadow": true,
                 "receive_shadow": false
             },
             {
@@ -182,7 +159,7 @@
             "type": "AttachedCamera",
             "properties": {
                 "target": "PlayerHelicopter",
-                "offset": [0, 1, -10]
+                "offset": [0, 2, -10]
             }
         }
     }

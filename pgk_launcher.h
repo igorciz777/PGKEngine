@@ -39,6 +39,7 @@ private:
     QCheckBox scalingCheck = QCheckBox("Scalable resolution");
     QCheckBox texFilterCheck = QCheckBox("Texture filtering");
     QCheckBox lightFilterCheck = QCheckBox("Smooth shading");
+    QCheckBox raycastShadowCheck = QCheckBox("Raycast shadows");
 
     QListWidget sceneListWidget = QListWidget();
 

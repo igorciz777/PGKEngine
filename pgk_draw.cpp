@@ -5,6 +5,8 @@
 
 #include <QPainter>
 #include <stack>
+#include <QThread>
+#include "pgk_raycast.h"
 
 #define COOL_COLOR_EFFECT 0
 
@@ -65,7 +67,7 @@ inline void PGK_Draw::drawCircle(QImage &target, const QColor &color, int16_t x0
     }
 }
 
-void PGK_Draw::drawTriangle(QImage &target, const Material &material, const Triangle &triangle, std::vector<float> &zBuffer, const std::vector<PGK_Light> &lights, const Vec3 &cameraPos)
+void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vector<float> &zBuffer, const std::vector<PGK_Light> &lights, const Vec3 &cameraPos, const std::vector<Triangle> &triangleBuffer)
 {
     const float area = PGK_Math::edgeFunction(triangle.s0, triangle.s1, triangle.s2);
     if (area <= 0) return; // backface
@@ -93,20 +95,44 @@ void PGK_Draw::drawTriangle(QImage &target, const Material &material, const Tria
 
     const Vec3 viewDir = (cameraPos - triangle.worldPosition).normalize();
 
-    const int texWidth = material.texture.width();
-    const int texHeight = material.texture.height();
+    const int texWidth = triangle.material->texture->width();
+    const int texHeight = triangle.material->texture->height();
 
     Vec3 normal; QColor phongColor;
+    bool inShadow = false;
+    float t;
 
     if(!g_pgkCore.SMOOTH_SHADING){
         normal = ((norms[0]  + norms[1]  + norms[2])/3).normalize();
         for (const auto& light : lights) {
-            const Vec3 lightDir = (light.getLocalPosition() - triangle.worldPosition).normalize();
+            inShadow = false;
+            const Vec3 surface = triangle.worldPosition + normal * 0.01f;
+            const Vec3 lightDir = (light.getLocalPosition() - surface).normalize();
 
             QColor lightColor = PGK_Draw::calculateFlatLighting(light, lightDir, normal);
             phongColor = QColor(std::min(255, phongColor.red() + lightColor.red()),
                                 std::min(255, phongColor.green() + lightColor.green()),
                                 std::min(255, phongColor.blue() + lightColor.blue()));
+
+            if (!g_pgkCore.RAYCAST_SHADOWS) continue;
+            if (!light.castShadows) continue;
+            if (!triangle.receiveShadows) continue;
+
+            for (const auto& shadowCaster : triangleBuffer) {
+                if (!shadowCaster.castShadows || shadowCaster == triangle) continue;
+                if(triangle.worldPosition.distanceSq(shadowCaster.worldPosition) > g_pgkCore.SHADOW_DRAW_DISTANCE) continue;
+                if(inShadow) break;
+                if (PGK_Math::intersectTriangle(surface, lightDir, shadowCaster.v0, shadowCaster.v1, shadowCaster.v2, t)) {
+                    inShadow = true;
+                    break;
+                }
+            }
+
+            if(inShadow){
+                phongColor.setRed(phongColor.red()/2);
+                phongColor.setGreen(phongColor.green()/2);
+                phongColor.setBlue(phongColor.blue()/2);
+            }
         }
     }
 
@@ -131,6 +157,7 @@ void PGK_Draw::drawTriangle(QImage &target, const Material &material, const Tria
                 // depth
                 float zVal = alpha * z[0] + beta * z[1] + gamma * z[2];
 
+
                 if (zVal > *zPtr) {
                     *zPtr = zVal;
                     // perspective correction
@@ -141,34 +168,57 @@ void PGK_Draw::drawTriangle(QImage &target, const Material &material, const Tria
                     if(g_pgkCore.SMOOTH_SHADING){
                         // interpolacja normali
                         normal = (norms[0] * alpha + norms[1] * beta + norms[2] * gamma).normalize();
-
+                        inShadow = false;
                         phongColor = QColor(0, 0, 0);
                         for (const auto& light : lights) {
-                            const Vec3 lightDir = (light.getLocalPosition() - triangle.worldPosition).normalize();
+                            //barycentric surface
+                            const Vec3 surface = Vec3(triangle.v0 * alpha + triangle.v1 * beta + triangle.v2 * gamma);
+                            const Vec3 lightDir = (light.getLocalPosition() - surface).normalize();
                             //const Vec3 reflectDir = lightDir.reflect(normal).normalize();
 
                             QColor lightColor = PGK_Draw::calculateBlinnPhongLighting(light, lightDir,viewDir, normal);
                             phongColor = QColor(std::min(255, phongColor.red() + lightColor.red()),
                                                 std::min(255, phongColor.green() + lightColor.green()),
                                                 std::min(255, phongColor.blue() + lightColor.blue()));
+
+                            if (!g_pgkCore.RAYCAST_SHADOWS) continue;
+                            if (!light.castShadows) continue;
+                            if (!triangle.receiveShadows) continue;
+
+                            // Check for intersections with other objects
+                            for (const auto& shadowCaster : triangleBuffer) {
+                                if (!shadowCaster.castShadows || shadowCaster == triangle) continue;
+                                if(triangle.worldPosition.distanceSq(shadowCaster.worldPosition) > g_pgkCore.SHADOW_DRAW_DISTANCE) continue;
+                                if(inShadow) break;
+                                if (PGK_Math::intersectTriangle(surface, lightDir, shadowCaster.v0, shadowCaster.v1, shadowCaster.v2, t)) {
+                                    inShadow = true;
+                                    break;
+                                }
+                            }
+
+                            if(inShadow){
+                                phongColor.setRed(phongColor.red()/2);
+                                phongColor.setGreen(phongColor.green()/2);
+                                phongColor.setBlue(phongColor.blue()/2);
+                            }
                         }
                     }
 
                     // texture sampling
                     QColor texColor;
-                    if(g_pgkCore.TEX_FILTERING) texColor = getInterpolatedColor(material.texture, u * material.texture.width(), v * material.texture.height());
+                    if(g_pgkCore.TEX_FILTERING) texColor = getInterpolatedColor(*triangle.material->texture.get(), u * triangle.material->texture->width(), v * triangle.material->texture->height());
                     else{
                         const int tx = std::clamp(static_cast<int>(u * texWidth), 0, texWidth-1);
                         const int ty = std::clamp(static_cast<int>(v * texHeight), 0, texHeight-1);
-                        texColor = getColor(material.texture,tx,ty);
+                        texColor = getColor(*triangle.material->texture.get(),tx,ty);
                     }
 
-                    const QColor finalColor(
+                    QColor finalColor(
                         std::min(255, (phongColor.red() * texColor.red()) / 255),
                         std::min(255, (phongColor.green() * texColor.green()) / 255),
                         std::min(255, (phongColor.blue() * texColor.blue()) / 255)
                         );
-
+                    
                     drawPixel(target, finalColor, x, y);
                 }
             }

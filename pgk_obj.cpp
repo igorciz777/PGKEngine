@@ -139,7 +139,7 @@ void ObjLoader::parseMtlFile(const std::string& filename, std::map<std::string, 
         } else if (type == "map_Kd") {
             std::string texFile;
             iss >> texFile;
-            currentMtl.texture.load(QString::fromStdString(basePath + texFile));
+            currentMtl.texture->load(QString::fromStdString(basePath + texFile));
         }
     }
 

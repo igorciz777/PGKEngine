@@ -20,7 +20,7 @@ struct Material
     Vec3 specular = {1.0f, 1.0f, 1.0f};
     float shininess = 32.0f;
     bool smoothShading = false;
-    QImage texture;
+    std::shared_ptr<QImage> texture;
 };
 
 struct Mesh
@@ -30,6 +30,22 @@ struct Mesh
     Material material;
     std::string name;
 };
+
+struct Triangle{
+    const bool receiveShadows;
+    const bool castShadows;
+    const Vec3 worldPosition;
+    const Vec4 v0,v1,v2;
+    const Vec3 ndc0,ndc1,ndc2;
+    const Vec3 s0,s1,s2;
+    const Vec3 n0,n1,n2;
+    const Vec2 uv0,uv1,uv2;
+    std::shared_ptr<Material> material;
+};
+
+inline bool operator==(const Triangle &t1, const Triangle &t2){
+    return t1.v0 == t2.v0 && t1.v1 == t2.v1 && t1.v2 == t2.v2;
+}
 
 namespace ObjLoader
 {

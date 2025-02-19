@@ -12,7 +12,7 @@ namespace PGK_Draw
     inline void drawPixel(QImage &target, const QColor &color, int16_t x0, int16_t y0);
     inline void drawLine(QImage &target, const QColor &color, int16_t x0, int16_t y0, int16_t x1, int16_t y1);
     inline void drawCircle(QImage &target, const QColor &color, int16_t x0, int16_t y0, float radius);
-    void drawTriangle(QImage &target, const Material &material, const Triangle &triangle, std::vector<float> &zBuffer, const std::vector<PGK_Light> &lights, const Vec3 &cameraPos);
+    void drawTriangle(QImage &target, const Triangle &triangle, std::vector<float> &zBuffer, const std::vector<PGK_Light> &lights, const Vec3 &cameraPos, const std::vector<Triangle> &triangleBuffer);
     void drawText(QImage &target, const QString &text, uint8_t size,int16_t x0, int16_t y0, QColor color);
 
     inline void floodFill(QImage &target, QColor color, QColor newColor, int16_t x0, int16_t y0);

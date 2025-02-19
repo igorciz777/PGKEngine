@@ -27,11 +27,13 @@ PGK_Launcher::PGK_Launcher(QWidget *parent)
     // settingsRightLayout.addWidget(&scalingCheck);
     settingsRightLayout.addWidget(&texFilterCheck);
     settingsRightLayout.addWidget(&lightFilterCheck);
+    settingsRightLayout.addWidget(&raycastShadowCheck);
     settingsRightLayout.setAlignment(Qt::AlignTop);
     windowedCheck.setCheckState(Qt::Checked);
     scalingCheck.setCheckState(Qt::Checked);
     texFilterCheck.setCheckState(Qt::Checked);
     lightFilterCheck.setCheckState(Qt::Checked);
+    raycastShadowCheck.setCheckState(Qt::Unchecked);
 
     buttonsLayout.addWidget(&startButton);
     buttonsLayout.addWidget(&cancelButton);
@@ -93,6 +95,7 @@ QString PGK_Launcher::getCoreSettings() const
     g_pgkCore.SCALABLE = this->scalingCheck.isChecked();
     g_pgkCore.TEX_FILTERING = this->texFilterCheck.isChecked();
     g_pgkCore.SMOOTH_SHADING = this->lightFilterCheck.isChecked();
+    g_pgkCore.RAYCAST_SHADOWS = this->raycastShadowCheck.isChecked();
     g_pgkCore.ASPECT_RATIO = (float)g_pgkCore.RESOLUTION_WIDTH / (float)g_pgkCore.RESOLUTION_HEIGHT;
     return sceneListWidget.currentItem()->text();
 }
