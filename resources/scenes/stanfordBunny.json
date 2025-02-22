@@ -1,0 +1,119 @@
+{
+    "scene": {
+        "name": "Stanford Bunny",
+        "background": [0, 0, 0],
+        "objects": [
+            {
+                "type": "GameObject",
+                "name": "Bunny",
+                "mesh": "bunny.obj",
+                "texture": "gray.jpg",
+                "position": [0, 0, 0],
+                "scale": [5, 5, 5],
+                "cast_shadow": false,
+                "receive_shadow": false,
+                "components": [
+                    {
+                        "type": "Rotor",
+                        "properties": {
+                            "speed": 1
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "StaticObject",
+                "name": "Room",
+                "mesh": "room.obj",
+                "texture": "gray.jpg",
+                "position": [0, 0, 0],
+                "cast_shadow": true,
+                "receive_shadow": true
+            },
+            {
+                "type": "GameObject",
+                "name": "pivot",
+                "position": [0, 0, 0],
+                "components": [
+                    {
+                        "type": "Rotor",
+                        "properties": {
+                            "speed": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "GameObject",
+                "name": "pivot2",
+                "position": [0, 0, 0],
+                "rotation": [1, 0, 0],
+                "components": [
+                    {
+                        "type": "Rotor",
+                        "properties": {
+                            "speed": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "GameObject",
+                "name": "pivot3",
+                "position": [0, 0, 0],
+                "rotation": [0, 0, 1],
+                "components": [
+                    {
+                        "type": "Rotor",
+                        "properties": {
+                            "speed": 2
+                        }
+                    }
+                ]
+            }
+        ],
+        "lights": [
+            {
+                "position": [0, 1, 0],
+                "color": [200, 0, 0],
+                "intensity": 1,
+                "main": true,
+                "cast_shadow": true,
+                "attachTo": [
+                    {
+                        "object": "pivot",
+                        "position": [2, 0, 0]
+                    }
+                ]
+            },
+            {
+                "position": [0, 1, 0],
+                "color": [0, 200, 0],
+                "intensity": 1,
+                "cast_shadow": true,
+                "attachTo": [
+                    {
+                        "object": "pivot2",
+                        "position": [-2, 0, 0]
+                    }
+                ]
+            },
+            {
+                "position": [0, 1, 0],
+                "color": [0, 0, 200],
+                "intensity": 1,
+                "cast_shadow": true,
+                "attachTo": [
+                    {
+                        "object": "pivot3",
+                        "position": [0, 0, 2]
+                    }
+                ]
+            }
+        ],
+        "camera": {
+            "type": "FreeFlyCamera",
+            "position": [0, 0, 10]
+        }
+    }
+}

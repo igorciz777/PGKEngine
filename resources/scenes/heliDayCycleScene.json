@@ -1,6 +1,6 @@
 {
     "scene": {
-        "name": "TankScene",
+        "name": "Helicopter + Day/Night cycle Scene",
         "background": [135, 206, 235],
         "objects": [
             {
@@ -14,19 +14,42 @@
             },
             {
                 "type": "GameObject",
-                "name": "PlayerTank",
-                "mesh": "cube.obj",
+                "name": "PlayerHelicopter",
+                "mesh": "heli.obj",
                 "texture": "heli.png",
                 "position": [0, 15, 0],
                 "components": [
                     {
-                        "type": "TankControls",
+                        "type": "HeliControls",
+                        "properties": {
+                            "speed": 10,
+                            "lift": 5
+                        }
+                    }
+                ],
+                "cast_shadow": true,
+                "receive_shadow": false
+            },
+            {
+                "type": "GameObject",
+                "name": "HeliRotor",
+                "mesh": "rotor.obj",
+                "texture": "heli.png",
+                "components": [
+                    {
+                        "type": "Rotor",
                         "properties": {
                             "speed": 10
                         }
                     }
                 ],
-                "cast_shadow": true,
+                "attachTo": [
+                    {
+                        "object": "PlayerHelicopter",
+                        "position": [0, 0, 0]
+                    }
+                ],
+                "cast_shadow": false,
                 "receive_shadow": false
             },
             {
@@ -144,22 +167,42 @@
                 "rotation": [0, 0, -0.16],
                 "cast_shadow": false,
                 "receive_shadow": false
+            },
+            {
+                "type": "GameObject",
+                "name": "sun_pivot",
+                "position": [0, 0, 0],
+                "rotation": [1.57079633, 0, 0],
+                "components": [
+                    {
+                        "type": "Rotor",
+                        "properties": {
+                            "speed": 1
+                        }
+                    }
+                ]
             }
         ],
         "lights": [
             {
-                "position": [0, 100, 100],
+                "position": [0, 0, 0],
                 "color": [251, 255, 168],
                 "intensity": 1,
                 "main": true,
-                "cast_shadow": true
+                "cast_shadow": false,
+                "attachTo": [
+                    {
+                        "object": "sun_pivot",
+                        "position": [1000, 0, 1000]
+                    }
+                ]
             }
         ],
         "camera": {
             "type": "AttachedCamera",
             "properties": {
-                "target": "PlayerTank",
-                "offset": [0, 5, -10]
+                "target": "PlayerHelicopter",
+                "offset": [0, 1, -10]
             }
         }
     }
