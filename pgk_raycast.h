@@ -2,6 +2,9 @@
 #define PGK_RAYCAST_H
 
 #include "pgk_math.h"
+
+#include <memory>
+#include <vector>
 class PGK_GameObject;
 
 struct RaycastHit {

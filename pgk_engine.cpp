@@ -22,7 +22,7 @@ void PGK_Engine::update() {
 
     scene->update(deltaTime);
 
-    this->view->canvas.fill(this->view->backgroundColor);
+    this->view->canvas.fill(PGK_Math::QColorFromcVec3(*this->view->backgroundColor));
     scene->render(view);
     this->view->_zbuffer = this->view->_emptyZbuffer;
     this->view->update();

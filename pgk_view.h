@@ -2,6 +2,7 @@
 #define PGK_VIEW_H
 
 
+#include "pgk_math.h"
 #include <QWidget>
 #include <QHBoxLayout>
 
@@ -15,7 +16,7 @@ public:
 
     QImage canvas;
     QImage screen;
-    QColor backgroundColor = QColor(80,80,80);
+    std::shared_ptr<cVec3> backgroundColor = std::make_shared<cVec3>(80,80,80);
     float aspectRatio;
     int resWidth;
     int resHeight;

@@ -16,7 +16,6 @@ PGK_View::PGK_View(QWidget *parent) : QWidget(parent)
     _emptyZbuffer = std::vector<float>(resWidth*resHeight,std::numeric_limits<float>::lowest());
 
     canvas = QImage(resWidth, resHeight, QImage::Format_RGB32);
-    canvas.fill(backgroundColor);
     this->resize(resWidth,resHeight);
     this->setMouseTracking(true);
 }

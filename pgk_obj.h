@@ -44,7 +44,7 @@ struct Triangle{
 };
 
 inline bool operator==(const Triangle &t1, const Triangle &t2){
-    return t1.v0 == t2.v0 && t1.v1 == t2.v1 && t1.v2 == t2.v2;
+    return t1.worldPosition == t2.worldPosition;
 }
 
 namespace ObjLoader

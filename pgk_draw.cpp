@@ -4,33 +4,19 @@
 #include "pgk_math.h"
 
 #include <QPainter>
-#include <stack>
 #include <QThread>
-#include "pgk_raycast.h"
 
-#define COOL_COLOR_EFFECT 0
-
-#if COOL_COLOR_EFFECT == 1
-inline void PGK_Draw::drawPixel(QImage &target, const QColor &color, int16_t x0, int16_t y0)
+inline void PGK_Draw::drawPixel(QImage &target, const cVec3 &color, int16_t x0, int16_t y0)
 {
     if(x0 < 0 || x0 >= target.width()) return;
     if(y0 < 0 || y0 >= target.height()) return;
-    target.bits()[x0 * 4 + y0 * target.bytesPerLine()] = color.blue();
-    target.bits()[(x0+1) * 4 + y0 * target.bytesPerLine() + 1] = color.green();
-    target.bits()[(x0-1) * 4 + y0 * target.bytesPerLine() + 2] = color.red();
+    uchar* bits = target.bits();
+    bits[(y0 * target.width() + x0) * 4] = color.z;
+    bits[(y0 * target.width() + x0) * 4 + 1] = color.y;
+    bits[(y0 * target.width() + x0) * 4 + 2] = color.x;
 }
-#else
-inline void PGK_Draw::drawPixel(QImage &target, const QColor &color, int16_t x0, int16_t y0)
-{
-    if(x0 < 0 || x0 >= target.width()) return;
-    if(y0 < 0 || y0 >= target.height()) return;
-    const uint32_t* scanLine = reinterpret_cast<const uint32_t*>(target.scanLine(y0));
-    uint32_t *pixel = const_cast<uint32_t*>(scanLine + x0);
-    *pixel = color.rgba();
-}
-#endif
 
-inline void PGK_Draw::drawLine(QImage &target, const QColor &color, int16_t x0, int16_t y0, int16_t x1, int16_t y1){
+inline void PGK_Draw::drawLine(QImage &target, const cVec3 &color, int16_t x0, int16_t y0, int16_t x1, int16_t y1){
     int16_t dx = std::abs(x1 - x0);
     int8_t sx = x0 < x1 ? 1 : -1;
     int16_t dy = -std::abs(y1 - y0);
@@ -51,7 +37,7 @@ inline void PGK_Draw::drawLine(QImage &target, const QColor &color, int16_t x0, 
     }
 }
 
-inline void PGK_Draw::drawCircle(QImage &target, const QColor &color, int16_t x0, int16_t y0, float radius)
+inline void PGK_Draw::drawCircle(QImage &target, const cVec3 &color, int16_t x0, int16_t y0, float radius)
 {
     float L = (float)radius/std::sqrt(2);
     for(int x = 0; x <= L; x++){
@@ -67,7 +53,7 @@ inline void PGK_Draw::drawCircle(QImage &target, const QColor &color, int16_t x0
     }
 }
 
-void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vector<float> &zBuffer, const std::vector<PGK_Light> &lights, const Vec3 &cameraPos, const std::vector<Triangle> &triangleBuffer)
+void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vector<float> &zBuffer, const std::vector<std::shared_ptr<PGK_Light> > &lights, const Vec3 &cameraPos, const std::vector<Triangle> &triangleBuffer)
 {
     const float area = PGK_Math::edgeFunction(triangle.s0, triangle.s1, triangle.s2);
     if (area <= 0) return; // backface
@@ -98,7 +84,7 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
     const int texWidth = triangle.material->texture->width();
     const int texHeight = triangle.material->texture->height();
 
-    Vec3 normal; QColor phongColor;
+    Vec3 normal; cVec3 phongColor(0, 0, 0);
     bool inShadow = false;
     float t;
 
@@ -107,15 +93,13 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
         for (const auto& light : lights) {
             inShadow = false;
             const Vec3 surface = triangle.worldPosition + normal * 0.01f;
-            const Vec3 lightDir = (light.getLocalPosition() - surface).normalize();
+            const Vec3 lightDir = (light->getWorldPosition() - surface).normalize();
 
-            QColor lightColor = PGK_Draw::calculateFlatLighting(light, lightDir, normal);
-            phongColor = QColor(std::min(255, phongColor.red() + lightColor.red()),
-                                std::min(255, phongColor.green() + lightColor.green()),
-                                std::min(255, phongColor.blue() + lightColor.blue()));
+            cVec3 lightColor = PGK_Draw::calculateFlatLighting(light, lightDir, normal);
+            phongColor += lightColor;
 
             if (!g_pgkCore.RAYCAST_SHADOWS) continue;
-            if (!light.castShadows) continue;
+            if (!light->castShadows) continue;
             if (!triangle.receiveShadows) continue;
 
             for (const auto& shadowCaster : triangleBuffer) {
@@ -129,9 +113,7 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
             }
 
             if(inShadow){
-                phongColor.setRed(phongColor.red()/2);
-                phongColor.setGreen(phongColor.green()/2);
-                phongColor.setBlue(phongColor.blue()/2);
+                phongColor = phongColor >> 1;
             }
         }
     }
@@ -169,20 +151,18 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
                         // interpolacja normali
                         normal = (norms[0] * alpha + norms[1] * beta + norms[2] * gamma).normalize();
                         inShadow = false;
-                        phongColor = QColor(0, 0, 0);
+                        phongColor = cVec3(0, 0, 0);
                         for (const auto& light : lights) {
                             //barycentric surface
                             const Vec3 surface = Vec3(triangle.v0 * alpha + triangle.v1 * beta + triangle.v2 * gamma);
-                            const Vec3 lightDir = (light.getLocalPosition() - surface).normalize();
+                            const Vec3 lightDir = (light->getWorldPosition() - surface).normalize();
                             //const Vec3 reflectDir = lightDir.reflect(normal).normalize();
 
-                            QColor lightColor = PGK_Draw::calculateBlinnPhongLighting(light, lightDir,viewDir, normal);
-                            phongColor = QColor(std::min(255, phongColor.red() + lightColor.red()),
-                                                std::min(255, phongColor.green() + lightColor.green()),
-                                                std::min(255, phongColor.blue() + lightColor.blue()));
+                            cVec3 lightColor = PGK_Draw::calculateBlinnPhongLighting(light, lightDir,viewDir, normal);
+                            phongColor += lightColor;
 
                             if (!g_pgkCore.RAYCAST_SHADOWS) continue;
-                            if (!light.castShadows) continue;
+                            if (!light->castShadows) continue;
                             if (!triangle.receiveShadows) continue;
 
                             // Check for intersections with other objects
@@ -197,28 +177,26 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
                             }
 
                             if(inShadow){
-                                phongColor.setRed(phongColor.red()/2);
-                                phongColor.setGreen(phongColor.green()/2);
-                                phongColor.setBlue(phongColor.blue()/2);
+                                phongColor = phongColor >> 1;
                             }
                         }
                     }
 
                     // texture sampling
-                    QColor texColor;
-                    if(g_pgkCore.TEX_FILTERING) texColor = getInterpolatedColor(*triangle.material->texture.get(), u * triangle.material->texture->width(), v * triangle.material->texture->height());
+                    cVec3 texColor;
+                    if(g_pgkCore.TEX_FILTERING) texColor = getInterpolatedColor(*triangle.material->texture, u * triangle.material->texture->width(), v * triangle.material->texture->height());
                     else{
                         const int tx = std::clamp(static_cast<int>(u * texWidth), 0, texWidth-1);
                         const int ty = std::clamp(static_cast<int>(v * texHeight), 0, texHeight-1);
-                        texColor = getColor(*triangle.material->texture.get(),tx,ty);
+                        texColor = getColor(*triangle.material->texture,tx,ty);
                     }
 
-                    QColor finalColor(
-                        std::min(255, (phongColor.red() * texColor.red()) / 255),
-                        std::min(255, (phongColor.green() * texColor.green()) / 255),
-                        std::min(255, (phongColor.blue() * texColor.blue()) / 255)
-                        );
-                    
+                    cVec3 finalColor(
+                        std::min(255, (phongColor.x * texColor.x) >> 8),
+                        std::min(255, (phongColor.y * texColor.y) >> 8),
+                        std::min(255, (phongColor.z * texColor.z) >> 8)
+                    );
+
                     drawPixel(target, finalColor, x, y);
                 }
             }
@@ -235,36 +213,7 @@ void PGK_Draw::drawText(QImage &target, const QString &text, uint8_t size, int16
     painter.end();
 }
 
-inline void PGK_Draw::floodFill(QImage &target, QColor color, QColor newColor, int16_t x0, int16_t y0)
-{
-    if (color == newColor) return;
-    if (x0 < 0 || y0 < 0 || x0 >= target.width() || y0 >= target.height()) return;
-
-    std::stack<QPoint> Q;
-    Q.push(QPoint(x0, y0));
-
-    while (!Q.empty()) {
-        QPoint cur = Q.top();
-        Q.pop();
-
-        int16_t x = cur.x();
-        int16_t y = cur.y();
-
-        if (x < 0 || y < 0 || x >= target.width() || y >= target.height()) continue;
-
-        if (target.pixelColor(x, y) != color) continue;
-
-        PGK_Draw::drawPixel(target, newColor, x, y);
-
-        Q.push(QPoint(x + 1, y));
-        Q.push(QPoint(x - 1, y));
-        Q.push(QPoint(x, y + 1));
-        Q.push(QPoint(x, y - 1));
-    }
-    return;
-}
-
-inline void PGK_Draw::scanLine(QImage &target, QColor color, std::vector<QPoint> polygon)
+inline void PGK_Draw::scanLine(QImage &target, cVec3 color, std::vector<QPoint> polygon)
 {
     if (polygon.size() < 3) return;
 
@@ -300,18 +249,18 @@ inline void PGK_Draw::scanLine(QImage &target, QColor color, std::vector<QPoint>
     }
 }
 
-inline QColor PGK_Draw::getColor(const QImage &image, int16_t x, int16_t y)
+inline cVec3 PGK_Draw::getColor(const QImage &image, int16_t x, int16_t y)
 {
-    const uint32_t* scanLine = reinterpret_cast<const uint32_t*>(image.scanLine(y));
+    const uint32_t* scanLine = reinterpret_cast<const uint32_t*>(image.constScanLine(y));
     const uint32_t pixel = scanLine[x];
-    return QColor(
+    return cVec3(
         (pixel >> 16) & 0xff,
         (pixel >> 8) & 0xff,
         pixel & 0xff
     );
 }
 
-inline QColor PGK_Draw::getInterpolatedColor(const QImage &image, float x, float y) {
+inline cVec3 PGK_Draw::getInterpolatedColor(const QImage &image, float x, float y) {
     const int texWidth = image.width();
     const int texHeight = image.height();
 
@@ -320,67 +269,60 @@ inline QColor PGK_Draw::getInterpolatedColor(const QImage &image, float x, float
     const int x2 = std::clamp(x1 + 1, 0, texWidth-1);
     const int y2 = std::clamp(y1 + 1, 0, texHeight-1);
 
-    const QColor p00 = getColor(image, x1, y1);
-    const QColor p10 = getColor(image, x2, y1);
-    const QColor p01 = getColor(image, x1, y2);
-    const QColor p11 = getColor(image, x2, y2);
+    const cVec3 p00 = getColor(image, x1, y1);
+    const cVec3 p10 = getColor(image, x2, y1);
+    const cVec3 p01 = getColor(image, x1, y2);
+    const cVec3 p11 = getColor(image, x2, y2);
 
     const float a = x - x1;
     const float b = y - y1;
 
-    return PGK_Math::interpolateColor(p00, p10, p01, p11, a, b);
+    return PGK_Math::interpolatecVec3(p00, p10, p01, p11, a, b);
 }
 
-inline QColor PGK_Draw::calculatePhongLighting(const PGK_Light &light, const Vec3 &lightDir, const Vec3 &viewDir, const Vec3 &reflectDir, const Vec3 &normal)
+inline cVec3 PGK_Draw::calculatePhongLighting(const std::shared_ptr<PGK_Light> &light, const Vec3 &lightDir, const Vec3 &viewDir, const Vec3 &reflectDir, const Vec3 &normal)
 {
     const float ambientStrength = .2f;
-    const float diffuseStrength = std::max(0.0f, normal.dot(lightDir)) * light.diffusePower;
-    const float specularStrength = PGK_Math::fastpow(std::max(0.0f, viewDir.dot(reflectDir)), light.shininess) * light.specularPower;
+    const float diffuseStrength = std::max(0.0f, normal.dot(lightDir)) * light->diffusePower;
+    const float specularStrength = PGK_Math::fastpow(std::max(0.0f, viewDir.dot(reflectDir)), light->shininess) * light->specularPower;
 
-    const QColor ambient = light.ambientColor;
-    const QColor diffuse = light.diffuseColor;
-    const QColor specular = light.specularColor;
-
-    const QColor result(
-        std::min(255.0f, ambientStrength * ambient.red() + diffuseStrength * diffuse.red() + specularStrength * specular.red()),
-        std::min(255.0f, ambientStrength * ambient.green() + diffuseStrength * diffuse.green() + specularStrength * specular.green()),
-        std::min(255.0f, ambientStrength * ambient.blue() + diffuseStrength * diffuse.blue() + specularStrength * specular.blue())
-        );
+    const cVec3 result(
+        std::min(255.0f, ambientStrength * light->ambientColor->x + diffuseStrength * light->diffuseColor.x + specularStrength * light->specularColor.x),
+        std::min(255.0f, ambientStrength * light->ambientColor->y + diffuseStrength * light->diffuseColor.y + specularStrength * light->specularColor.y),
+        std::min(255.0f, ambientStrength * light->ambientColor->z + diffuseStrength * light->diffuseColor.z + specularStrength * light->specularColor.z)
+    );
 
     return result;
 }
 
-QColor PGK_Draw::calculateBlinnPhongLighting(const PGK_Light &light, const Vec3 &lightDir, const Vec3 &viewDir, const Vec3 &normal)
+cVec3 PGK_Draw::calculateBlinnPhongLighting(const std::shared_ptr<PGK_Light> &light, const Vec3 &lightDir, const Vec3 &viewDir, const Vec3 &normal)
 {
     const float ambientStrength = .2f;
-    const float diffuseStrength = std::max(0.0f, normal.dot(lightDir)) * light.diffusePower;
+    const float diffuseStrength = std::max(0.0f, normal.dot(lightDir)) * light->diffusePower;
     const Vec3 halfDir = (lightDir + viewDir).normalize();
-    const float specularStrength = PGK_Math::fastpow(std::max(0.0f, normal.dot(halfDir)), light.shininess) * light.specularPower;
+    const float specularStrength = PGK_Math::fastpow(std::max(0.0f, normal.dot(halfDir)), light->shininess) * light->specularPower;
 
-    const QColor ambient = light.ambientColor;
-    const QColor diffuse = light.diffuseColor;
-    const QColor specular = light.specularColor; 
+    const cVec3 result(
+        std::min(255.0f, ambientStrength * light->ambientColor->x + diffuseStrength * light->diffuseColor.x + specularStrength * light->specularColor.x),
+        std::min(255.0f, ambientStrength * light->ambientColor->y + diffuseStrength * light->diffuseColor.y + specularStrength * light->specularColor.y),
+        std::min(255.0f, ambientStrength * light->ambientColor->z + diffuseStrength * light->diffuseColor.z + specularStrength * light->specularColor.z)
+    );
 
-    return QColor(
-        std::min(255.0f, ambientStrength * ambient.red() + diffuseStrength * diffuse.red() + specularStrength * specular.red()),
-        std::min(255.0f, ambientStrength * ambient.green() + diffuseStrength * diffuse.green() + specularStrength * specular.green()),
-        std::min(255.0f, ambientStrength * ambient.blue() + diffuseStrength * diffuse.blue() + specularStrength * specular.blue())
-        );
+    return result;
 }
 
-inline QColor PGK_Draw::calculateFlatLighting(const PGK_Light &light, const Vec3 &lightDir, const Vec3 &normal)
+inline cVec3 PGK_Draw::calculateFlatLighting(const std::shared_ptr<PGK_Light> &light, const Vec3 &lightDir, const Vec3 &normal)
 {
     const float ambientStrength = .2f;
-    const float diffuseStrength = std::max(0.0f, normal.dot(lightDir)) * light.diffusePower;
+    const float diffuseStrength = std::max(0.0f, normal.dot(lightDir)) * light->diffusePower;
 
-    const QColor ambient = light.ambientColor;
-    const QColor diffuse = light.diffuseColor;
+    const cVec3 result(
+        std::min(255.0f, ambientStrength * light->ambientColor->x + diffuseStrength * light->diffuseColor.x),
+        std::min(255.0f, ambientStrength * light->ambientColor->y + diffuseStrength * light->diffuseColor.y),
+        std::min(255.0f, ambientStrength * light->ambientColor->z + diffuseStrength * light->diffuseColor.z)
+    );
 
-    return QColor(
-        std::min(255.0f, ambientStrength * ambient.red() + diffuseStrength * diffuse.red()),
-        std::min(255.0f, ambientStrength * ambient.green() + diffuseStrength * diffuse.green()),
-        std::min(255.0f, ambientStrength * ambient.blue() + diffuseStrength * diffuse.blue())
-        );
+    return result;
 }
 
 

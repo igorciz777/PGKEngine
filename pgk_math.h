@@ -2,9 +2,11 @@
 #define PGK_MATH_H
 
 
+#include <algorithm>
 #include <cmath>
 #include <immintrin.h>
-#include <qcolor.h>
+#include <cstdint>
+#include <QColor>
 
 #define EPS  1e-5f
 #define MOD  1000000007
@@ -102,8 +104,11 @@ public:
     inline bool operator<=(const T_Vec3& v) const { return x <= v.x && y <= v.y && z <= v.z; }
     inline bool operator>(const T_Vec3& v) const { return x > v.x && y > v.y && z > v.z; }
     inline bool operator>=(const T_Vec3& v) const { return x >= v.x && y >= v.y && z >= v.z; }
+    inline T_Vec3 operator>>(int s) const { return T_Vec3(x >> s, y >> s, z >> s); }
+    inline T_Vec3 operator<<(int s) const { return T_Vec3(x << s, y << s, z << s); }
 };
 
+typedef T_Vec3<uint16_t> cVec3; // color vec3
 typedef T_Vec3<int> iVec3;
 typedef T_Vec3<float> Vec3;
 typedef T_Vec3<double> dVec3;
@@ -665,7 +670,7 @@ namespace PGK_Math
                          0, 0, 0, 1);
     }
 
-    QColor interpolateColor(const QColor &p00, const QColor &p10, const QColor &p01, const QColor &p11, const float &a, const float &b);
+    cVec3 interpolatecVec3(const cVec3 &p00, const cVec3 &p10, const cVec3 &p01, const cVec3 &p11, const float &a, const float &b);
     inline Vec3 clipToNDC(const Vec4 &clip){ return Vec3(clip.x/clip.w,clip.y/clip.w,clip.z/clip.w); }
     inline Vec2 projectionToScreen(const Vec3 &ndc, const int &scW, const int &scH){ return Vec2( ((ndc.x + 1) * scW) / 2, ((-ndc.y + 1) * scH) / 2); }
     inline Vec3 projectionToScreen(const Vec3 &ndc, const int &scW, const int &scH, const float &near, const float &far){ return Vec3( ((ndc.x + 1) * scW) / 2, ((-ndc.y + 1) * scH) / 2, (ndc.z - near) / (far - near)); }
@@ -701,6 +706,8 @@ namespace PGK_Math
         t = f * edge2.dot(q);
         return t > EPSILON;
     }
+    inline cVec3 cVec3FromQColor(const QColor &color){ return cVec3(color.red(),color.green(),color.blue()); }
+    inline QColor QColorFromcVec3(const cVec3 &color){ return QColor(color.x,color.y,color.z); }
 };
 
 #endif // PGK_MATH_H

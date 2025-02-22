@@ -46,6 +46,7 @@ PGK_Launcher::PGK_Launcher(QWidget *parent)
     resolutionCBox.addItem("320x240");
     resolutionCBox.addItem("426x240");
     resolutionCBox.addItem("640x480");
+    resolutionCBox.addItem("852x480");
     resolutionCBox.addItem("800x600");
     resolutionCBox.addItem("1024x768");
     resolutionCBox.addItem("1280x720");
@@ -60,6 +61,7 @@ PGK_Launcher::PGK_Launcher(QWidget *parent)
     resolutionCBox.setCurrentIndex(2);
 
     // Refresh rate combobox
+    refreshRateCBox.addItem("10Hz");
     refreshRateCBox.addItem("30Hz");
     refreshRateCBox.addItem("60Hz");
     refreshRateCBox.addItem("75Hz");
@@ -69,7 +71,7 @@ PGK_Launcher::PGK_Launcher(QWidget *parent)
     refreshRateCBox.addItem("240Hz");
 
     // Set default
-    refreshRateCBox.setCurrentIndex(1);
+    refreshRateCBox.setCurrentIndex(2);
 
     // Scene list widget
     sceneListWidget.addItem("Default");

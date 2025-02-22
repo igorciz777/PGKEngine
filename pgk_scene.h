@@ -22,9 +22,9 @@ public:
 private:
     std::shared_ptr<PGK_GameObject> rootObject;
     std::vector<Triangle> triangleBuffer;
-    std::vector<PGK_Light> lights;
+    std::vector<std::shared_ptr<PGK_Light> > lights;
     std::shared_ptr<PGK_Camera> camera;
-    QColor sceneBackgroundColor;
+    std::shared_ptr<cVec3> sceneBackgroundColor;
     void createDefaultScene();
 
     //Json scene parser

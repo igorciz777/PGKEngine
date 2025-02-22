@@ -52,6 +52,7 @@ public:
 
     bool receiveShadows=false;
     bool castShadows=false;
+    bool isVisible=true;
 
 private:
     QString name;
@@ -62,7 +63,6 @@ private:
     Vec3 localScale;
 
     std::vector<Mesh> gameObjectMesh;
-    bool isVisible=true;
 
     PGK_GameObject* parent;
     std::vector<std::shared_ptr<PGK_GameObject>> children;

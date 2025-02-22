@@ -1,12 +1,11 @@
 #include "pgk_math.h"
 
-QColor PGK_Math::interpolateColor(const QColor &p00, const QColor &p10, const QColor &p01, const QColor &p11, const float &a, const float &b)
+cVec3 PGK_Math::interpolatecVec3(const cVec3 &p00, const cVec3 &p10, const cVec3 &p01, const cVec3 &p11, const float &a, const float &b)
 {
-    return QColor(
-        p00.red() * (1 - a) * (1 - b) + p10.red() * a * (1 - b) + p01.red() * (1 - a) * b + p11.red() * a * b,
-        p00.green() * (1 - a) * (1 - b) + p10.green() * a * (1 - b) + p01.green() * (1 - a) * b + p11.green() * a * b,
-        p00.blue() * (1 - a) * (1 - b) + p10.blue() * a * (1 - b) + p01.blue() * (1 - a) * b + p11.blue() * a * b,
-        p00.alpha() * (1 - a) * (1 - b) + p10.alpha() * a * (1 - b) + p01.alpha() * (1 - a) * b + p11.alpha() * a * b);
+    return cVec3(
+        p00.x * (1 - a) * (1 - b) + p10.x * a * (1 - b) + p01.x * (1 - a) * b + p11.x * a * b,
+        p00.y * (1 - a) * (1 - b) + p10.y * a * (1 - b) + p01.y * (1 - a) * b + p11.y * a * b,
+        p00.z * (1 - a) * (1 - b) + p10.z * a * (1 - b) + p01.z * (1 - a) * b + p11.z * a * b);
 }
 
 Vec3 PGK_Math::getBarycentric(const Vec2 &A, const Vec2 &B, const Vec2 &C, const Vec2 &P)

@@ -141,13 +141,13 @@ void PGK_GameObject::getTriangleBuffer(std::vector<Triangle> &triangleBuffer, PG
     const Mat4 modelViewInvTrs = PGK_Math::normalMatrix(worldTransform);
 
     for(size_t i = 0; i < this->gameObjectMesh.size(); i++) {
-        const Mesh mesh = this->gameObjectMesh[i];
-        std::shared_ptr<Material> materialPtr = std::make_shared<Material>(mesh.material);
+        const Mesh *mesh = &this->gameObjectMesh[i];
+        std::shared_ptr<Material> materialPtr = std::make_shared<Material>(mesh->material);
 
-        for (size_t i = 0; i < mesh.indices.size(); i += 3) {
-            const Vec4 v0 = worldTransform * Vec4(mesh.vertices[mesh.indices[i]].position);
-            const Vec4 v1 = worldTransform * Vec4(mesh.vertices[mesh.indices[i+1]].position);
-            const Vec4 v2 = worldTransform * Vec4(mesh.vertices[mesh.indices[i+2]].position);
+        for (size_t i = 0; i < mesh->indices.size(); i += 3) {
+            const Vec4 v0 = worldTransform * Vec4(mesh->vertices[mesh->indices[i]].position);
+            const Vec4 v1 = worldTransform * Vec4(mesh->vertices[mesh->indices[i+1]].position);
+            const Vec4 v2 = worldTransform * Vec4(mesh->vertices[mesh->indices[i+2]].position);
 
             const Vec4 clipped0 = projectionMatrix * viewMatrix * v0;
             const Vec4 clipped1 = projectionMatrix * viewMatrix * v1;
@@ -164,9 +164,9 @@ void PGK_GameObject::getTriangleBuffer(std::vector<Triangle> &triangleBuffer, PG
             const Vec3 ndc1 = PGK_Math::clipToNDC(clipped1);
             const Vec3 ndc2 = PGK_Math::clipToNDC(clipped2);
 
-            const Vec4 n0 = (modelViewInvTrs * Vec4(mesh.vertices[mesh.indices[i]].normal)).normalize();
-            const Vec4 n1 = (modelViewInvTrs * Vec4(mesh.vertices[mesh.indices[i+1]].normal)).normalize();
-            const Vec4 n2 = (modelViewInvTrs * Vec4(mesh.vertices[mesh.indices[i+2]].normal)).normalize();
+            const Vec4 n0 = (modelViewInvTrs * Vec4(mesh->vertices[mesh->indices[i]].normal)).normalize();
+            const Vec4 n1 = (modelViewInvTrs * Vec4(mesh->vertices[mesh->indices[i+1]].normal)).normalize();
+            const Vec4 n2 = (modelViewInvTrs * Vec4(mesh->vertices[mesh->indices[i+2]].normal)).normalize();
 
             const Vec3 screen0 = PGK_Math::projectionToScreen(ndc0, view->resWidth, view->resHeight, view->nearClip, view->farClip);
             const Vec3 screen1 = PGK_Math::projectionToScreen(ndc1, view->resWidth, view->resHeight, view->nearClip, view->farClip);
@@ -182,9 +182,9 @@ void PGK_GameObject::getTriangleBuffer(std::vector<Triangle> &triangleBuffer, PG
                 ndc0,ndc1,ndc2,
                 screen0,screen1,screen2,
                 n0,n1,n2,
-                mesh.vertices[mesh.indices[i]].texCoord,
-                mesh.vertices[mesh.indices[i + 1]].texCoord,
-                mesh.vertices[mesh.indices[i + 2]].texCoord,
+                mesh->vertices[mesh->indices[i]].texCoord,
+                mesh->vertices[mesh->indices[i + 1]].texCoord,
+                mesh->vertices[mesh->indices[i + 2]].texCoord,
                 materialPtr
             };
             triangleBuffer.push_back(t);
