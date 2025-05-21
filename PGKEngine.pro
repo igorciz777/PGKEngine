@@ -52,7 +52,11 @@ QMAKE_CXXFLAGS_DEBUG -= -O2
 # add -O3
 QMAKE_CXXFLAGS_RELEASE *= -O3
 QMAKE_CXXFLAGS_DEBUG *= -O3
-
+# add other flags
+QMAKE_CXXFLAGS_DEBUG *= -Wall
+QMAKE_CXXFLAGS_DEBUG *= -Wextra
+QMAKE_CXXFLAGS_DEBUG *= -ffast-math
+QMAKE_CXXFLAGS_DEBUG *= -msse4.1
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin

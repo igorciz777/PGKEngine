@@ -20,6 +20,7 @@ int main(int argc, char *argv[]) {
             view.showFullScreen();
         }
         view.lockMouse();
+
         PGK_Scene scene(scenePath);
         PGK_Engine engine(&scene,&view);
 

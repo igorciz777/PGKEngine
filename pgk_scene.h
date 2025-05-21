@@ -1,4 +1,3 @@
-// pgk_scene.h
 #ifndef PGK_SCENE_H
 #define PGK_SCENE_H
 

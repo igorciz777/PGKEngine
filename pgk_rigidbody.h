@@ -2,7 +2,6 @@
 #define PGK_RIGIDBODY_H
 
 #include "pgk_math.h"
-#include <memory>
 
 class PGK_GameObject;
 

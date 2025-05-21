@@ -76,37 +76,43 @@
             {
                 "position": [0, 1, 0],
                 "color": [200, 0, 0],
-                "intensity": 1,
+                "intensity": 1.2,
+                "decay":0.5,
                 "main": true,
                 "cast_shadow": true,
+                "type":"Point",
                 "attachTo": [
                     {
                         "object": "pivot",
-                        "position": [2, 0, 0]
+                        "position": [1.5, 0, 0]
                     }
                 ]
             },
             {
                 "position": [0, 1, 0],
                 "color": [0, 200, 0],
-                "intensity": 1,
+                "intensity": 1.2,
+                "decay":0.5,
                 "cast_shadow": true,
+                "type":"Point",
                 "attachTo": [
                     {
                         "object": "pivot2",
-                        "position": [-2, 0, 0]
+                        "position": [-1.5, 0, 0]
                     }
                 ]
             },
             {
                 "position": [0, 1, 0],
                 "color": [0, 0, 200],
-                "intensity": 1,
+                "intensity": 1.2,
+                "decay":0.5,
                 "cast_shadow": true,
+                "type":"Point",
                 "attachTo": [
                     {
                         "object": "pivot3",
-                        "position": [0, 0, 2]
+                        "position": [0, 0, 1.5]
                     }
                 ]
             }

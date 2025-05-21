@@ -429,6 +429,18 @@ void PGK_Scene::parseLight(const QJsonObject& light) {
         }
     }
 
+    if(light.contains("type")){
+        QString type = light.value("type").toString();
+        if(type == "Directional") phongLight->lightType = PGK_Light::Type::Directional;
+        if(type == "Point") phongLight->lightType = PGK_Light::Type::Point;
+        if(type == "Spot") phongLight->lightType = PGK_Light::Type::Spot;
+    }
+
+    if(light.contains("decay")) phongLight->decay = light.value("decay").toDouble();
+    if(light.contains("distance")) phongLight->distance = light.value("distance").toDouble();
+    if(light.contains("angle")) phongLight->angle = light.value("angle").toDouble();
+    if(light.contains("penumbra")) phongLight->penumbra = light.value("penumbra").toDouble();
+
     bool castShadows = light.value("cast_shadow").toBool();
     if(castShadows) phongLight->castShadows = true;
 
@@ -460,10 +472,11 @@ void PGK_Scene::parseCamera(const QJsonObject& camera) {
             this->camera->setLocalPosition(position);
         }
     }
+    this->camera->setName("camera");
 }
 
 std::shared_ptr<PGK_GameObject> PGK_Scene::findObjectByName(const QString& name) {
-    // rekursja znajdywanie objektu
+    // recursive search
     std::function<std::shared_ptr<PGK_GameObject>(std::shared_ptr<PGK_GameObject>)> search;
     search = [&search, &name](std::shared_ptr<PGK_GameObject> obj) -> std::shared_ptr<PGK_GameObject> {
         if (obj->getName() == name) {

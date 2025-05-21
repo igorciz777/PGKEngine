@@ -142,7 +142,7 @@ void PGK_GameObject::getTriangleBuffer(std::vector<Triangle> &triangleBuffer, PG
 
     for(size_t i = 0; i < this->gameObjectMesh.size(); i++) {
         const Mesh *mesh = &this->gameObjectMesh[i];
-        std::shared_ptr<Material> materialPtr = std::make_shared<Material>(mesh->material);
+        const std::shared_ptr<Material> materialPtr = std::make_shared<Material>(mesh->material);
 
         for (size_t i = 0; i < mesh->indices.size(); i += 3) {
             const Vec4 v0 = worldTransform * Vec4(mesh->vertices[mesh->indices[i]].position);

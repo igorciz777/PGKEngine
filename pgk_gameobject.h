@@ -1,4 +1,3 @@
-// pgk_gameobject.h
 #ifndef PGK_GAMEOBJECT_H
 #define PGK_GAMEOBJECT_H
 

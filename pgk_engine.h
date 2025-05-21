@@ -1,4 +1,3 @@
-// pgk_engine.h
 #ifndef PGK_ENGINE_H
 #define PGK_ENGINE_H
 
