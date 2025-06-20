@@ -20,7 +20,9 @@ struct Material
     Vec3 specular = {1.0f, 1.0f, 1.0f};
     float shininess = 32.0f;
     bool smoothShading = false;
+    bool hasNormalMap = false;
     std::shared_ptr<QImage> texture;
+    std::shared_ptr<QImage> normalMap;
 };
 
 struct Mesh

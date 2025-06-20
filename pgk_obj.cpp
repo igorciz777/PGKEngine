@@ -113,7 +113,7 @@ void ObjLoader::parseMtlFile(const std::string& filename, std::map<std::string, 
         return;
     }
 
-    Material currentMtl;
+    Material currentMtl = Material();
     std::string currentMtlName;
     std::string line;
 
@@ -136,10 +136,18 @@ void ObjLoader::parseMtlFile(const std::string& filename, std::map<std::string, 
             iss >> currentMtl.specular.x >> currentMtl.specular.y >> currentMtl.specular.z;
         } else if (type == "Ns") {
             iss >> currentMtl.shininess;
+        // TODO: check for file not existing, QImage sets a -1x-1 image
         } else if (type == "map_Kd") {
             std::string texFile;
             iss >> texFile;
-            currentMtl.texture->load(QString::fromStdString(basePath + texFile));
+            std::shared_ptr<QImage> newTexture = std::make_shared<QImage>(QString::fromStdString(basePath + texFile));
+            currentMtl.texture = newTexture;
+        } else if (type == "map_Bump" || type == "bump" || type == "map_bump") {
+            std::string normalMapFile;
+            iss >> normalMapFile;
+            std::shared_ptr<QImage> normalMap = std::make_shared<QImage>(QString::fromStdString(basePath + normalMapFile));
+            currentMtl.normalMap = normalMap;
+            currentMtl.hasNormalMap = true;
         }
     }
 

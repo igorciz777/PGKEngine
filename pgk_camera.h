@@ -18,6 +18,7 @@ public:
     void setMode(Mode mode);
     void setFov(float fov);
     void setAspectRatio(float aspect);
+    void setMoveSpeed(float speed);
 
     void updateCamera(float deltaTime);
 

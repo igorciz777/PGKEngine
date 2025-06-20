@@ -20,6 +20,11 @@ void PGK_Camera::setAspectRatio(float aspect) {
     this->aspectRatio = aspect;
 }
 
+void PGK_Camera::setMoveSpeed(float speed)
+{
+    this->moveSpeed = speed;
+}
+
 void PGK_Camera::updateCamera(float deltaTime) {
     switch (mode) {
     case Mode::Free:

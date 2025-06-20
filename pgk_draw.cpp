@@ -224,8 +224,8 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
                             }
                             }
 
-                            // cVec3 lightColor = PGK_Draw::calculateBlinnPhongLighting(light, lightDir, viewDir, normal, surface);
-                            cVec3 lightColor = PGK_Draw::calculateGGXLighting(light, lightDir, viewDir, normal, surface);
+                            cVec3 lightColor = PGK_Draw::calculateBlinnPhongLighting(light, lightDir, viewDir, normal, surface);
+                            // cVec3 lightColor = PGK_Draw::calculateGGXLighting(light, lightDir, viewDir, normal, surface);
                             phongColor += lightColor;
 
                             if (!g_pgkCore.RAYCAST_SHADOWS)
@@ -472,13 +472,19 @@ void PGK_Draw::getLightTypeVariables(const std::shared_ptr<PGK_Light> &light, co
         float cosPhi = std::cos(light->angle);
         float cosGamma = std::cos(light->angle * (1.0f - light->penumbra));
 
-        if (cosTheta > cosPhi) {
-            if (cosGamma != cosPhi) {
+        if (cosTheta > cosPhi)
+        {
+            if (cosGamma != cosPhi)
+            {
                 spotEffect = std::pow((cosTheta - cosPhi) / (cosGamma - cosPhi), light->penumbra);
-            } else {
+            }
+            else
+            {
                 spotEffect = 1.0f;
             }
-        } else {
+        }
+        else
+        {
             spotEffect = 0.0f;
         }
         lightDir = lightToSurface;

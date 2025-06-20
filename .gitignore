@@ -58,3 +58,6 @@ build/
 
 # .vscode
 .vscode/
+
+# island test folder, too many files
+island/

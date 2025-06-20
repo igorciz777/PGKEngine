@@ -369,7 +369,7 @@ void PGK_Scene::parseComponent(std::shared_ptr<PGK_GameObject> gameObject, const
             }
 
             Vec3 rayOrigin = position;
-            Vec3 rayDirection = self->getWorldRotation() * Vec3(0, -1, 0);
+            Vec3 rayDirection = Vec3(0, -1, 0);
             float rayLength = 20.0f;
 
             RaycastHit hit = PGK_Raycast::raycast(rayOrigin, rayDirection, rayLength, this->rootObject->getChildren());
@@ -470,6 +470,9 @@ void PGK_Scene::parseCamera(const QJsonObject& camera) {
             QJsonArray positionArray = camera.value("position").toArray();
             Vec3 position(positionArray[0].toDouble(), positionArray[1].toDouble(), positionArray[2].toDouble());
             this->camera->setLocalPosition(position);
+        }
+        if(camera.contains("speed")){
+            this->camera->setMoveSpeed(camera.value("speed").toDouble());
         }
     }
     this->camera->setName("camera");
