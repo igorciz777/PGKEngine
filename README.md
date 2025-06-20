@@ -16,9 +16,9 @@ This project is mostly a learning experience and in no way a feature-complete an
 - Loading scenes from .json files
 - Backface culling
 - Z-buffering
-- Flat and Blinn-Phong shading
+- Flat, Blinn-Phong, GGX shading
 - Freefly and Attached camera modes
-- Parsing .obj and .mtl files
+- Parsing .obj and .mtl files (mtl WIP)
 - Texture mapping
 - Raycast shadows
 
