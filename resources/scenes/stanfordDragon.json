@@ -1,0 +1,82 @@
+{
+    "scene": {
+        "name": "Stanford Dragon",
+        "background": [200, 200, 200],
+        "objects": [
+            {
+                "type": "GameObject",
+                "name": "Dragon00",
+                "mesh": "xyzrgb_dragon.obj",
+                "texture": "gray.jpg",
+                "position": [0, 0, -10],
+                "scale": [0.1, 0.1, 0.1],
+                "cast_shadow": false,
+                "receive_shadow": false
+            },
+            {
+                "type": "GameObject",
+                "name": "Dragon01",
+                "mesh": "xyzrgb_dragon.obj",
+                "texture": "gray.jpg",
+                "position": [20, 0, -10],
+                "scale": [0.1, 0.1, 0.1],
+                "cast_shadow": false,
+                "receive_shadow": false
+            },
+            {
+                "type": "GameObject",
+                "name": "Dragon02",
+                "mesh": "xyzrgb_dragon.obj",
+                "texture": "gray.jpg",
+                "position": [-20, 0, -10],
+                "scale": [0.1, 0.1, 0.1],
+                "cast_shadow": false,
+                "receive_shadow": false
+            },
+            {
+                "type": "GameObject",
+                "name": "Dragon03",
+                "mesh": "xyzrgb_dragon.obj",
+                "texture": "gray.jpg",
+                "position": [0, 0, -40],
+                "scale": [0.1, 0.1, 0.1],
+                "cast_shadow": false,
+                "receive_shadow": false
+            },
+            {
+                "type": "GameObject",
+                "name": "Dragon04",
+                "mesh": "xyzrgb_dragon.obj",
+                "texture": "gray.jpg",
+                "position": [20, 0, -40],
+                "scale": [0.1, 0.1, 0.1],
+                "cast_shadow": false,
+                "receive_shadow": false
+            },
+            {
+                "type": "GameObject",
+                "name": "Dragon05",
+                "mesh": "xyzrgb_dragon.obj",
+                "texture": "gray.jpg",
+                "position": [-20, 0, -40],
+                "scale": [0.1, 0.1, 0.1],
+                "cast_shadow": false,
+                "receive_shadow": false
+            }
+
+        ],
+        "lights": [
+            {
+                "position": [1000, 1000, 0],
+                "color": [251, 255, 168],
+                "intensity": 1,
+                "main": true,
+                "cast_shadow": true
+            }
+        ],
+        "camera": {
+            "type": "FreeFlyCamera",
+            "position": [0, 0, 10]
+        }
+    }
+}

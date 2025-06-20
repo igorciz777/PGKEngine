@@ -15,8 +15,8 @@
             {
                 "type": "GameObject",
                 "name": "PlayerTank",
-                "mesh": "cube.obj",
-                "texture": "heli.png",
+                "mesh": "tank.obj",
+                "scale": [1, 1, 1],
                 "position": [0, 15, 0],
                 "components": [
                     {
@@ -159,7 +159,7 @@
             "type": "AttachedCamera",
             "properties": {
                 "target": "PlayerTank",
-                "offset": [0, 5, -10]
+                "offset": [0, 2, 5]
             }
         }
     }
