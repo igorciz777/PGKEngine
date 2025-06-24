@@ -20,6 +20,9 @@ PGK_Scene::PGK_Scene(QString scenePath) {
     rootObject = std::make_shared<PGK_GameObject>();
 
     if(scenePath == "Helicopter demo") scenePath = QDir::currentPath()+"/scenes/heliScene.json";
+    if(scenePath == "Normal mapping demo") scenePath = QDir::currentPath()+"/scenes/mtlTest.json";
+    if(scenePath == "Lightning demo") scenePath = QDir::currentPath()+"/scenes/stanfordBunny.json";
+    if(scenePath == "Stanford Dragon benchmark") scenePath = QDir::currentPath()+"/scenes/stanfordDragon.json";
 
     QFile sceneFile(scenePath);
     if (sceneFile.open(QIODevice::ReadOnly)) {
@@ -111,74 +114,39 @@ void PGK_Scene::createDefaultScene() {
     light3->castShadows = true;
     lights.push_back(light3);
 
-    std::vector<Mesh> meshes = ObjLoader::loadObj(QDir::currentPath().toStdString()+"/sphere.obj");
+    std::vector<Mesh> title1 = ObjLoader::loadObj(QDir::currentPath().toStdString()+"/title_1.obj");
+    std::vector<Mesh> title2 = ObjLoader::loadObj(QDir::currentPath().toStdString()+"/title_2.obj");
     auto texture1 = std::make_shared<QImage>(QImage(64,64,QImage::Format_ARGB32));
-    auto texture2 = std::make_shared<QImage>(QImage(64,64,QImage::Format_ARGB32));
-    auto texture3 = std::make_shared<QImage>(QImage(64,64,QImage::Format_ARGB32));
-    texture1->fill(Qt::white);
-    texture2->fill(Qt::gray);
-    texture3->fill(Qt::magenta);
+    texture1->fill(Qt::gray);
     auto object = std::make_shared<PGK_GameObject>();
-    object->setLocalPosition(Vec3(0, -1, -50));
-    meshes[0].material.texture = texture1;
-    object->setMeshes(meshes);
+    object->setLocalPosition(Vec3(0, 0, -20));
+    title1[0].material.texture = texture1;
+    object->setMeshes(title1);
     object->castShadows = true;
     object->receiveShadows = true;
 
-    auto objectChild_1 = std::make_shared<PGK_GameObject>();
-    objectChild_1->setLocalPosition(Vec3(0, 1, -5));
-    meshes[0].material.texture = texture2;
-    objectChild_1->setMeshes(meshes);
-    objectChild_1->castShadows = true;
-    objectChild_1->receiveShadows = true;
-
-    auto objectChild_2 = std::make_shared<PGK_GameObject>();
-    objectChild_2->setLocalPosition(Vec3(0, 1, 5));
-    meshes[0].material.texture = texture3;
-    objectChild_2->setMeshes(meshes);
-    objectChild_2->castShadows = true;
-    objectChild_2->receiveShadows = true;
+    auto object2 = std::make_shared<PGK_GameObject>();
+    object2->setLocalPosition(Vec3(0, -1, -20));
+    title2[0].material.texture = texture1;
+    object2->setMeshes(title2);
+    object2->castShadows = true;
+    object2->receiveShadows = true;
 
     std::weak_ptr<PGK_GameObject> weakobject = object;
-    std::weak_ptr<PGK_GameObject> weakobjectChild_1 = objectChild_1;
-    std::weak_ptr<PGK_GameObject> weakobjectChild_2 = objectChild_2;
 
     object->onUpdate = [weakobject](PGK_GameObject*, float deltaTime) {
         if (auto object = weakobject.lock()) {
 
             Vec3 rotation = object->getLocalEuler();
-            rotation.x -= 1.0f * deltaTime;
-            rotation.y += 1.0f * deltaTime;
+            //rotation.x -= 1.0f * deltaTime;
+            //rotation.y += 1.0f * deltaTime;
             rotation.z -= 1.0f * deltaTime;
 
             object->setLocalEuler(rotation, Quat::RotationOrder::YXZ);
         }
     };
-
-    objectChild_1->onUpdate = [weakobjectChild_1](PGK_GameObject*, float deltaTime) {
-        if (auto object = weakobjectChild_1.lock()) {
-            Vec3 rotation = object->getLocalEuler();
-            rotation.x += 1.0f * deltaTime;
-            rotation.y -= 1.0f * deltaTime;
-            rotation.z += 1.0f * deltaTime;
-
-            object->setLocalEuler(rotation, Quat::RotationOrder::XYZ);
-        }
-    };
-
-    objectChild_2->onUpdate = [weakobjectChild_2](PGK_GameObject*, float deltaTime) {
-        if (auto object = weakobjectChild_2.lock()) {
-            Vec3 rotation = object->getLocalEuler();
-            rotation.x -= 1.0f * deltaTime;
-            rotation.y -= 1.0f * deltaTime;
-            rotation.z += 1.0f * deltaTime;
-
-            object->setLocalEuler(rotation, Quat::RotationOrder::ZXY);
-        }
-    };
-    object->addChild(objectChild_1);
-    object->addChild(objectChild_2);
     rootObject->addChild(object);
+    rootObject->addChild(object2);
 }
 
 void PGK_Scene::parseGameObject(const QJsonObject& object) {

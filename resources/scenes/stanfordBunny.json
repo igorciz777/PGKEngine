@@ -119,7 +119,8 @@
         ],
         "camera": {
             "type": "FreeFlyCamera",
-            "position": [0, 0, 10]
+            "position": [0, 0, 10],
+            "speed" : 5
         }
     }
 }

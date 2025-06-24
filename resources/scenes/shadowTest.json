@@ -1,0 +1,62 @@
+{
+    "scene": {
+        "name": "Shadow Showcase",
+        "background": [222, 222, 222],
+        "objects": [
+            {
+                "type": "GameObject",
+                "name": "Floor",
+                "mesh": "plane.obj",
+                "texture": "gray.jpg",
+                "position": [0, -5, 0],
+                "scale": [5, 5, 5],
+                "cast_shadow": false,
+                "receive_shadow": true
+            },
+            {
+                "type": "GameObject",
+                "name": "pivot",
+                "position": [0, 0, 0],
+                "components": [
+                    {
+                        "type": "Rotor",
+                        "properties": {
+                            "speed": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "GameObject",
+                "name": "Cube",
+                "mesh": "cube.obj",
+                "texture": "gray.jpg",
+                "position": [0, 1, 0],
+                "cast_shadow": true,
+                "receive_shadow": false,
+                "attachTo": [
+                    {
+                        "object": "pivot",
+                        "position": [1.5, 0, 0]
+                    }
+                ]
+            }
+        ],
+        "lights": [
+            {
+                "position": [0, 5, 0],
+                "color": [190, 180, 200],
+                "intensity": 1.2,
+                "decay":0.5,
+                "main": true,
+                "cast_shadow": true,
+                "type":"Directional"
+            }
+        ],
+        "camera": {
+            "type": "FreeFlyCamera",
+            "position": [0, 1, 20],
+            "speed" : 5
+        }
+    }
+}
