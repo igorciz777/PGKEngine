@@ -23,9 +23,18 @@ This project is mostly a learning experience and in no way a feature-complete an
 - Raycast shadows
 
 # Screenshot examples
-- Default scene @ 640x480
-  ![default](https://github.com/user-attachments/assets/45ba897b-3970-4361-8488-fc077f58f278)
-- Helicopter demo @ 640x480
-  ![heli1](https://github.com/user-attachments/assets/ad249bf2-81b8-48f9-be8f-ea0849842c6a)
-- Helicopter demo @ 640x480 with Texture filtering disabled and flat shading
-  ![heli2](https://github.com/user-attachments/assets/93ae1f82-6bef-48af-9575-8edbf1b6a763)
+- Default scene
+![title](https://github.com/user-attachments/assets/44d8698e-d4c7-4cdb-aba2-cd1772fa986a)
+
+- Helicopter demo
+![helicopter_1](https://github.com/user-attachments/assets/4ab988f9-e491-42d1-b107-106072a3b852)
+
+- Stanford bunny lightning demo
+![light](https://github.com/user-attachments/assets/7f882682-ec56-40f8-bb9a-00c9bbe33e89)
+
+- Normal mapping + multiple texture per mesh mapping example
+![normal](https://github.com/user-attachments/assets/8aa7b422-1ec4-4abf-a0c2-a0eb7bf72b0c)
+
+- Raycast shadows example
+![raycast](https://github.com/user-attachments/assets/6b2e729f-66d2-4e79-811c-b63434e86746)
+
