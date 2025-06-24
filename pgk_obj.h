@@ -21,6 +21,7 @@ struct Material
     float shininess = 32.0f;
     bool smoothShading = false;
     bool hasNormalMap = false;
+    float normalMapStrength = 1.0f;
     std::shared_ptr<QImage> texture;
     std::shared_ptr<QImage> normalMap;
 };
@@ -42,6 +43,7 @@ struct Triangle{
     const Vec3 s0,s1,s2;
     const Vec3 n0,n1,n2;
     const Vec2 uv0,uv1,uv2;
+    const Vec3 tangent, bitangent;
     std::shared_ptr<Material> material;
 };
 

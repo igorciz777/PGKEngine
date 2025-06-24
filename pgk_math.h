@@ -288,13 +288,52 @@ public:
         return m;
     }
     static const T_Mat4<T> Transform(const T_Vec3<T> &v, const T_Vec3<T> &r, const T_Vec3<T> &s){
-        return Translate(v) * RotateX(r.x) * RotateY(r.y) * RotateZ(r.z) * Scale(s);
+        T sx = sinf(r.x), cx = cosf(r.x);
+        T sy = sinf(r.y), cy = cosf(r.y);
+        T sz = sinf(r.z), cz = cosf(r.z);
+
+        T m00 = cy * cz * s.x;
+        T m01 = sx * sy * cz - cx * sz;
+        T m02 = cx * sy * cz + sx * sz;
+        T m10 = cy * sz * s.y;
+        T m11 = sx * sy * sz + cx * cz;
+        T m12 = cx * sy * sz - sx * cz;
+        T m20 = -sy * s.z;
+        T m21 = sx * cy;
+        T m22 = cx * cy;
+
+        return T_Mat4<T>(
+            m00, m01, m02, v.x,
+            m10, m11, m12, v.y,
+            m20, m21, m22, v.z,
+            0,   0,   0,   1
+        );
     }
 
     static const T_Mat4<T> Transform(const T_Vec3<T> &v, const T_Quat<T> &r, const T_Vec3<T> &s){
-        if(s == Vec3(1, 1, 1))
-            return Translate(v) * r.toMatrix();
-        return Translate(v) * r.toMatrix() * Scale(s);
+        T x = r.x, y = r.y, z = r.z, w = r.w;
+        T sx = s.x, sy = s.y, sz = s.z;
+
+        T xx = x * x, yy = y * y, zz = z * z;
+        T xy = x * y, xz = x * z, yz = y * z;
+        T wx = w * x, wy = w * y, wz = w * z;
+
+        T m00 = sx * (1 - 2 * (yy + zz));
+        T m01 = sx * (2 * (xy - wz));
+        T m02 = sx * (2 * (xz + wy));
+        T m10 = sy * (2 * (xy + wz));
+        T m11 = sy * (1 - 2 * (xx + zz));
+        T m12 = sy * (2 * (yz - wx));
+        T m20 = sz * (2 * (xz - wy));
+        T m21 = sz * (2 * (yz + wx));
+        T m22 = sz * (1 - 2 * (xx + yy));
+
+        return T_Mat4<T>(
+            m00, m01, m02, v.x,
+            m10, m11, m12, v.y,
+            m20, m21, m22, v.z,
+            0,   0,   0,   1
+        );
     }
 
     static const T_Mat4<T> OrthographicProjection(T left, T right, T bottom, T top, T near, T far){
@@ -409,7 +448,7 @@ public:
         y *= len;
         z *= len;
         w *= len;
-        return *this; 
+        return *this;
     }
 
     T_Quat() : x(0), y(0), z(0), w(1) {}

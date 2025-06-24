@@ -143,6 +143,9 @@ void ObjLoader::parseMtlFile(const std::string& filename, std::map<std::string, 
             std::shared_ptr<QImage> newTexture = std::make_shared<QImage>(QString::fromStdString(basePath + texFile));
             currentMtl.texture = newTexture;
         } else if (type == "map_Bump" || type == "bump" || type == "map_bump") {
+            std::string bmParameter;
+            iss >> bmParameter;
+            if(bmParameter == "-bm") iss >> currentMtl.normalMapStrength;
             std::string normalMapFile;
             iss >> normalMapFile;
             std::shared_ptr<QImage> normalMap = std::make_shared<QImage>(QString::fromStdString(basePath + normalMapFile));

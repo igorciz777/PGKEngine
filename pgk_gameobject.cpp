@@ -172,6 +172,19 @@ void PGK_GameObject::getTriangleBuffer(std::vector<Triangle> &triangleBuffer, PG
             const Vec3 screen1 = PGK_Math::projectionToScreen(ndc1, view->resWidth, view->resHeight, view->nearClip, view->farClip);
             const Vec3 screen2 = PGK_Math::projectionToScreen(ndc2, view->resWidth, view->resHeight, view->nearClip, view->farClip);
 
+            // Compute edges and UV deltas for normal mapping
+            Vec3 edge1 = mesh->vertices[mesh->indices[i+1]].position - mesh->vertices[mesh->indices[i]].position;
+            Vec3 edge2 = mesh->vertices[mesh->indices[i+2]].position - mesh->vertices[mesh->indices[i]].position;
+            Vec2 deltaUV1 = mesh->vertices[mesh->indices[i+1]].texCoord - mesh->vertices[mesh->indices[i]].texCoord;
+            Vec2 deltaUV2 = mesh->vertices[mesh->indices[i+2]].texCoord - mesh->vertices[mesh->indices[i]].texCoord;
+
+            float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+            Vec3 tangent = f * (edge1 * deltaUV2.y - edge2 * deltaUV1.y);
+            Vec3 bitangent = f * (edge2 * deltaUV1.x - edge1 * deltaUV2.x);
+            tangent.normalize();
+            bitangent.normalize();
+
             if((ndc1 - ndc0).cross(ndc2 - ndc0).z < 0) continue;
 
             const Triangle t = {
@@ -185,6 +198,7 @@ void PGK_GameObject::getTriangleBuffer(std::vector<Triangle> &triangleBuffer, PG
                 mesh->vertices[mesh->indices[i]].texCoord,
                 mesh->vertices[mesh->indices[i + 1]].texCoord,
                 mesh->vertices[mesh->indices[i + 2]].texCoord,
+                tangent, bitangent,
                 materialPtr
             };
             triangleBuffer.push_back(t);

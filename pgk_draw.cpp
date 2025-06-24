@@ -97,7 +97,7 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
     bool inShadow = false;
     float t;
 
-    if (!g_pgkCore.SMOOTH_SHADING)
+    if (g_pgkCore.SHADING_MODE == 0)
     {
         normal = ((norms[0] + norms[1] + norms[2]) / 3).normalize();
         for (const auto &light : lights)
@@ -177,7 +177,7 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
 
             if (w0 >= 0 && w1 >= 0 && w2 >= 0)
             {
-                // barycentryczne
+                // barycentric
                 const float alpha = w0 * invArea;
                 const float beta = w1 * invArea;
                 const float gamma = w2 * invArea;
@@ -193,10 +193,24 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
                     const float u = w * (alpha * uv0x + beta * uv1x + gamma * uv2x);
                     const float v = w * (alpha * uv0y + beta * uv1y + gamma * uv2y);
 
-                    if (g_pgkCore.SMOOTH_SHADING)
+                    if (g_pgkCore.SHADING_MODE != 0)
                     {
-                        // interpolacja normali
+                        // interpolate normals and tangents
                         normal = (norms[0] * alpha + norms[1] * beta + norms[2] * gamma).normalize();
+                        Vec3 tangent = (triangle.tangent * alpha + triangle.tangent * beta + triangle.tangent * gamma).normalize();
+                        Vec3 bitangent = (triangle.bitangent * alpha + triangle.bitangent * beta + triangle.bitangent * gamma).normalize();
+
+                        // normal mapping
+                        if (triangle.material->normalMap) {
+                            cVec3 nmColor = getColor(*triangle.material->normalMap, u * triangle.material->normalMap->width(), v * triangle.material->normalMap->height());
+                            Vec3 tangentNormal(
+                                ((nmColor.x / 255.0f) * 2.0f - 1.0f) * triangle.material->normalMapStrength,
+                                ((nmColor.y / 255.0f) * 2.0f - 1.0f) * triangle.material->normalMapStrength,
+                                (nmColor.z / 255.0f) * 2.0f - 1.0f
+                            );
+                            // transform from tangent to world space
+                            normal = (tangent * tangentNormal.x + bitangent * tangentNormal.y + normal * tangentNormal.z).normalize();
+                        }
                         inShadow = false;
                         phongColor = cVec3(0, 0, 0);
                         for (const auto &light : lights)
@@ -223,9 +237,9 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
                                 break;
                             }
                             }
-
-                            cVec3 lightColor = PGK_Draw::calculateBlinnPhongLighting(light, lightDir, viewDir, normal, surface);
-                            // cVec3 lightColor = PGK_Draw::calculateGGXLighting(light, lightDir, viewDir, normal, surface);
+                            cVec3 lightColor;
+                            if(g_pgkCore.SHADING_MODE == 1) lightColor = PGK_Draw::calculateBlinnPhongLighting(light, lightDir, viewDir, normal, surface);
+                            else lightColor = PGK_Draw::calculateGGXLighting(light, lightDir, viewDir, normal, surface);
                             phongColor += lightColor;
 
                             if (!g_pgkCore.RAYCAST_SHADOWS)

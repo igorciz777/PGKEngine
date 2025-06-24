@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QFileDialog>
+#include <QLabel>
 
 
 PGK_Launcher::PGK_Launcher(QWidget *parent)
@@ -26,13 +27,16 @@ PGK_Launcher::PGK_Launcher(QWidget *parent)
     settingsRightLayout.addWidget(&windowedCheck);
     // settingsRightLayout.addWidget(&scalingCheck);
     settingsRightLayout.addWidget(&texFilterCheck);
-    settingsRightLayout.addWidget(&lightFilterCheck);
     settingsRightLayout.addWidget(&raycastShadowCheck);
+
+    QLabel shadingModeLabel("Shading Mode:");
+    settingsRightLayout.addWidget(&shadingModeLabel);
+    settingsRightLayout.addWidget(&shadingModeCBox);
+
     settingsRightLayout.setAlignment(Qt::AlignTop);
     windowedCheck.setCheckState(Qt::Checked);
     scalingCheck.setCheckState(Qt::Checked);
     texFilterCheck.setCheckState(Qt::Checked);
-    lightFilterCheck.setCheckState(Qt::Checked);
     raycastShadowCheck.setCheckState(Qt::Unchecked);
 
     buttonsLayout.addWidget(&startButton);
@@ -76,6 +80,9 @@ PGK_Launcher::PGK_Launcher(QWidget *parent)
     // Scene list widget
     sceneListWidget.addItem("Default");
     sceneListWidget.addItem("Helicopter demo");
+    sceneListWidget.addItem("Normal mapping demo");
+    sceneListWidget.addItem("Lightning demo");
+    sceneListWidget.addItem("Stanford Dragon benchmark");
 
     // Cancel button
     cancelButton.connect(&cancelButton, &QPushButton::clicked, this, &QDialog::reject);
@@ -86,6 +93,11 @@ PGK_Launcher::PGK_Launcher(QWidget *parent)
     // Menu actions
     menuOpenScene.connect(&menuOpenScene, &QAction::triggered, this, &PGK_Launcher::openScene);
     menuExit.connect(&menuExit, &QAction::triggered, this, &QDialog::reject);
+
+    shadingModeCBox.addItem("Flat");
+    shadingModeCBox.addItem("Blinn-Phong");
+    shadingModeCBox.addItem("GGX");
+    shadingModeCBox.setCurrentIndex(2); // Default to GGX
 }
 
 QString PGK_Launcher::getCoreSettings() const
@@ -96,7 +108,7 @@ QString PGK_Launcher::getCoreSettings() const
     g_pgkCore.WINDOWED = this->windowedCheck.isChecked();
     g_pgkCore.SCALABLE = this->scalingCheck.isChecked();
     g_pgkCore.TEX_FILTERING = this->texFilterCheck.isChecked();
-    g_pgkCore.SMOOTH_SHADING = this->lightFilterCheck.isChecked();
+    g_pgkCore.SHADING_MODE = this->shadingModeCBox.currentIndex(); // Update shading mode
     g_pgkCore.RAYCAST_SHADOWS = this->raycastShadowCheck.isChecked();
     g_pgkCore.ASPECT_RATIO = (float)g_pgkCore.RESOLUTION_WIDTH / (float)g_pgkCore.RESOLUTION_HEIGHT;
     return sceneListWidget.currentItem()->text();
@@ -108,6 +120,7 @@ void PGK_Launcher::openScene()
     if (!fileName.isEmpty())
     {
         sceneListWidget.addItem(fileName);
+        sceneListWidget.setCurrentRow(sceneListWidget.count() - 1);
     }
 }
 
