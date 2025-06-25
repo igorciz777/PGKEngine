@@ -5,6 +5,7 @@
 
 typedef struct PGK_CORE
 {
+    size_t AVAILABLE_THREADS = 1;
     uint32_t RESOLUTION_WIDTH = 320;
     uint32_t RESOLUTION_HEIGHT = 240;
     bool WINDOWED = true;

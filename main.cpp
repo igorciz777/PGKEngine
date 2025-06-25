@@ -5,6 +5,8 @@
 #include "pgk_engine.h"
 
 #include <QApplication>
+#include <thread>
+
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
@@ -12,7 +14,7 @@ int main(int argc, char *argv[]) {
     PGK_Launcher launcher;
     if (launcher.exec() == QDialog::Accepted) {
         QString scenePath = launcher.getCoreSettings();
-
+        g_pgkCore.AVAILABLE_THREADS = std::thread::hardware_concurrency();
         PGK_View view(nullptr);
         if (g_pgkCore.WINDOWED) {
             view.show();

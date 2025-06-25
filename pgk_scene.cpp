@@ -8,24 +8,32 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <thread>
 
-PGK_Scene::PGK_Scene(){
+PGK_Scene::PGK_Scene()
+{
     createDefaultScene();
 }
 
-PGK_Scene::PGK_Scene(QString scenePath) {
+PGK_Scene::PGK_Scene(QString scenePath)
+{
     this->camera = std::make_shared<PGK_Camera>();
     this->camera->setAspectRatio(g_pgkCore.ASPECT_RATIO);
     this->camera->setFov(60);
     rootObject = std::make_shared<PGK_GameObject>();
 
-    if(scenePath == "Helicopter demo") scenePath = QDir::currentPath()+"/scenes/heliScene.json";
-    if(scenePath == "Normal mapping demo") scenePath = QDir::currentPath()+"/scenes/mtlTest.json";
-    if(scenePath == "Lightning demo") scenePath = QDir::currentPath()+"/scenes/stanfordBunny.json";
-    if(scenePath == "Stanford Dragon benchmark") scenePath = QDir::currentPath()+"/scenes/stanfordDragon.json";
+    if (scenePath == "Helicopter demo")
+        scenePath = QDir::currentPath() + "/scenes/heliScene.json";
+    if (scenePath == "Normal mapping demo")
+        scenePath = QDir::currentPath() + "/scenes/mtlTest.json";
+    if (scenePath == "Lightning demo")
+        scenePath = QDir::currentPath() + "/scenes/stanfordBunny.json";
+    if (scenePath == "Stanford Dragon benchmark")
+        scenePath = QDir::currentPath() + "/scenes/stanfordDragon.json";
 
     QFile sceneFile(scenePath);
-    if (sceneFile.open(QIODevice::ReadOnly)) {
+    if (sceneFile.open(QIODevice::ReadOnly))
+    {
         QJsonDocument doc = QJsonDocument::fromJson(sceneFile.readAll());
         QJsonObject sceneObject = doc.object().value("scene").toObject();
 
@@ -33,16 +41,18 @@ PGK_Scene::PGK_Scene(QString scenePath) {
         qDebug() << "Loading scene:" << sceneName;
 
         QJsonArray background = sceneObject.value("background").toArray();
-        this->sceneBackgroundColor =  std::make_shared<cVec3>(background[0].toInt(), background[1].toInt(), background[2].toInt());
+        this->sceneBackgroundColor = std::make_shared<cVec3>(background[0].toInt(), background[1].toInt(), background[2].toInt());
 
         QJsonArray objectsArray = sceneObject.value("objects").toArray();
-        for (const QJsonValue& objectValue : objectsArray) {
+        for (const QJsonValue &objectValue : objectsArray)
+        {
             QJsonObject object = objectValue.toObject();
             parseGameObject(object);
         }
 
         QJsonArray lightsArray = sceneObject.value("lights").toArray();
-        for (const QJsonValue& lightValue : lightsArray) {
+        for (const QJsonValue &lightValue : lightsArray)
+        {
             QJsonObject light = lightValue.toObject();
             parseLight(light);
         }
@@ -51,8 +61,11 @@ PGK_Scene::PGK_Scene(QString scenePath) {
         parseCamera(cameraObject);
 
         sceneFile.close();
-    } else {
-        if(scenePath != "Default") qWarning() << "Failed to open scene file:" << scenePath;
+    }
+    else
+    {
+        if (scenePath != "Default")
+            qWarning() << "Failed to open scene file:" << scenePath;
         createDefaultScene();
     }
     triangleBufferSize = rootObject->calcTriangleBufferSize();
@@ -60,35 +73,60 @@ PGK_Scene::PGK_Scene(QString scenePath) {
 
 PGK_Scene::~PGK_Scene() {}
 
-void PGK_Scene::update(float &deltaTime) {
+void PGK_Scene::update(float &deltaTime)
+{
     camera->updateCamera(deltaTime);
     rootObject->update(deltaTime);
-    for(const auto &light : lights){
+    for (const auto &light : lights)
+    {
         light->update(deltaTime);
     }
 }
 
-void PGK_Scene::render(PGK_View *view) {
+void PGK_Scene::render(PGK_View *view)
+{
     view->backgroundColor = this->sceneBackgroundColor;
 
     triangleBuffer.clear();
     triangleBuffer.reserve(triangleBufferSize);
 
     rootObject->getTriangleBuffer(triangleBuffer, view, this->camera->getViewMatrix(), this->camera->getProjectionMatrix(view->nearClip, view->farClip));
-    for(const auto& triangle : triangleBuffer){
-        PGK_Draw::drawTriangle(view->canvas, triangle, view->_zbuffer, lights, camera->getWorldPosition(),triangleBuffer);
+    if(g_pgkCore.AVAILABLE_THREADS < 2)
+    {
+        for (const auto &triangle : triangleBuffer)
+        {
+            PGK_Draw::drawTriangle(view->canvas, triangle, view->_zbuffer, lights, camera->getWorldPosition(), triangleBuffer);
+        }
+        return;
+    }
+    std::vector<std::thread> threads;
+    size_t numThreads = g_pgkCore.AVAILABLE_THREADS;
+    size_t chunkSize = triangleBuffer.size() / numThreads;
+    for (size_t i = 0; i < numThreads; ++i)
+    {
+        threads.emplace_back([&, i]()
+                             {
+        size_t start = i * chunkSize;
+        size_t end = (i == numThreads - 1) ? triangleBuffer.size() : start + chunkSize;
+        for (size_t j = start; j < end; ++j) {
+            PGK_Draw::drawTriangle(view->canvas, triangleBuffer[j], view->_zbuffer, lights, camera->getWorldPosition(), triangleBuffer);
+        } });
+    }
+    for (auto &thread : threads)
+    {
+        thread.join();
     }
 }
 
+// scene parsing
 
-//scene parsing
-
-void PGK_Scene::createDefaultScene() {
+void PGK_Scene::createDefaultScene()
+{
     this->camera = std::make_shared<PGK_Camera>();
     this->camera->setAspectRatio(g_pgkCore.ASPECT_RATIO);
     this->camera->setFov(20);
     this->camera->setMode(PGK_Camera::Mode::Free);
-    this->camera->setLocalPosition(Vec3(0,0,-5));
+    this->camera->setLocalPosition(Vec3(0, 0, -5));
     this->sceneBackgroundColor = std::make_shared<cVec3>(PGK_Math::cVec3FromQColor(Qt::gray));
 
     rootObject = std::make_shared<PGK_GameObject>();
@@ -114,9 +152,9 @@ void PGK_Scene::createDefaultScene() {
     light3->castShadows = true;
     lights.push_back(light3);
 
-    std::vector<Mesh> title1 = ObjLoader::loadObj(QDir::currentPath().toStdString()+"/title_1.obj");
-    std::vector<Mesh> title2 = ObjLoader::loadObj(QDir::currentPath().toStdString()+"/title_2.obj");
-    auto texture1 = std::make_shared<QImage>(QImage(64,64,QImage::Format_ARGB32));
+    std::vector<Mesh> title1 = ObjLoader::loadObj(QDir::currentPath().toStdString() + "/title_1.obj");
+    std::vector<Mesh> title2 = ObjLoader::loadObj(QDir::currentPath().toStdString() + "/title_2.obj");
+    auto texture1 = std::make_shared<QImage>(QImage(64, 64, QImage::Format_ARGB32));
     texture1->fill(Qt::gray);
     auto object = std::make_shared<PGK_GameObject>();
     object->setLocalPosition(Vec3(0, 0, -20));
@@ -134,12 +172,14 @@ void PGK_Scene::createDefaultScene() {
 
     std::weak_ptr<PGK_GameObject> weakobject = object;
 
-    object->onUpdate = [weakobject](PGK_GameObject*, float deltaTime) {
-        if (auto object = weakobject.lock()) {
+    object->onUpdate = [weakobject](PGK_GameObject *, float deltaTime)
+    {
+        if (auto object = weakobject.lock())
+        {
 
             Vec3 rotation = object->getLocalEuler();
-            //rotation.x -= 1.0f * deltaTime;
-            //rotation.y += 1.0f * deltaTime;
+            // rotation.x -= 1.0f * deltaTime;
+            // rotation.y += 1.0f * deltaTime;
             rotation.z -= 1.0f * deltaTime;
 
             object->setLocalEuler(rotation, Quat::RotationOrder::YXZ);
@@ -149,8 +189,9 @@ void PGK_Scene::createDefaultScene() {
     rootObject->addChild(object2);
 }
 
-void PGK_Scene::parseGameObject(const QJsonObject& object) {
-    //QString type = object.value("type").toString();
+void PGK_Scene::parseGameObject(const QJsonObject &object)
+{
+    // QString type = object.value("type").toString();
     QString name = object.value("name").toString();
     QString meshPath = object.value("mesh").toString();
     QString texturePath = object.value("texture").toString();
@@ -159,94 +200,116 @@ void PGK_Scene::parseGameObject(const QJsonObject& object) {
 
     auto gameObject = std::make_shared<PGK_GameObject>();
 
-    if(object.contains("mesh")){
+    if (object.contains("mesh"))
+    {
         std::vector<Mesh> meshes = ObjLoader::loadObj(QDir::currentPath().toStdString() + "/" + meshPath.toStdString());
-        if(object.contains("texture")){
+        if (object.contains("texture"))
+        {
             auto texture = std::make_shared<QImage>(QImage(texturePath));
-            for(auto& mesh : meshes){
+            for (auto &mesh : meshes)
+            {
                 mesh.material.texture = texture;
             }
         }
         gameObject->setMeshes(meshes);
-    }else{
+    }
+    else
+    {
         gameObject->isVisible = false;
     }
 
-    if(object.contains("type"))
+    if (object.contains("type"))
     {
-        if(object.value("type").toString()=="StaticObject") gameObject->isStatic = true;
+        if (object.value("type").toString() == "StaticObject")
+            gameObject->isStatic = true;
     }
 
     gameObject->setName(name);
 
-    if(castShadows) gameObject->castShadows = true;
-    if(receiveShadows) gameObject->receiveShadows = true;
+    if (castShadows)
+        gameObject->castShadows = true;
+    if (receiveShadows)
+        gameObject->receiveShadows = true;
 
-    if (object.contains("position")) {
+    if (object.contains("position"))
+    {
         QJsonArray positionArray = object.value("position").toArray();
         Vec3 position(positionArray[0].toDouble(), positionArray[1].toDouble(), positionArray[2].toDouble());
         gameObject->setLocalPosition(position);
     }
-    if (object.contains("rotation")) {
+    if (object.contains("rotation"))
+    {
         QJsonArray rotationArray = object.value("rotation").toArray();
         Vec3 rotation(rotationArray[0].toDouble(), rotationArray[1].toDouble(), rotationArray[2].toDouble());
         gameObject->setLocalEuler(rotation, Quat::RotationOrder::XYZ);
     }
-    if (object.contains("scale")) {
+    if (object.contains("scale"))
+    {
         QJsonArray scaleArray = object.value("scale").toArray();
         Vec3 scale(scaleArray[0].toDouble(), scaleArray[1].toDouble(), scaleArray[2].toDouble());
         gameObject->setLocalScale(scale);
     }
 
-    if (object.contains("components")) {
+    if (object.contains("components"))
+    {
         QJsonArray componentsArray = object.value("components").toArray();
-        for (const QJsonValue& componentValue : componentsArray) {
+        for (const QJsonValue &componentValue : componentsArray)
+        {
             QJsonObject component = componentValue.toObject();
             parseComponent(gameObject, component);
         }
     }
 
-    if (object.contains("attachTo")) {
+    if (object.contains("attachTo"))
+    {
         QJsonArray attachArray = object.value("attachTo").toArray();
-        for (const QJsonValue& attachValue : attachArray) {
+        for (const QJsonValue &attachValue : attachArray)
+        {
             QJsonObject attach = attachValue.toObject();
             QString parentName = attach.value("object").toString();
             QJsonArray positionArray = attach.value("position").toArray();
             Vec3 offset(positionArray[0].toDouble(), positionArray[1].toDouble(), positionArray[2].toDouble());
 
             auto parent = findObjectByName(parentName);
-            if (parent) {
+            if (parent)
+            {
                 parent->addChild(gameObject);
                 gameObject->setLocalPosition(offset);
-            } else {
+            }
+            else
+            {
                 qWarning() << "Parent object not found:" << parentName;
             }
         }
     }
 
-    if (!object.contains("attachTo")) {
+    if (!object.contains("attachTo"))
+    {
         rootObject->addChild(gameObject);
     }
 }
 
-void PGK_Scene::parseComponent(std::shared_ptr<PGK_GameObject> gameObject, const QJsonObject& component) {
+void PGK_Scene::parseComponent(std::shared_ptr<PGK_GameObject> gameObject, const QJsonObject &component)
+{
     QString type = component.value("type").toString();
     QJsonObject properties = component.value("properties").toObject();
 
-    if (type == "HeliControls") {
+    if (type == "HeliControls")
+    {
         const float speed = properties.value("speed").toDouble();
         const float lift = properties.value("lift").toDouble();
         const float tiltAmount = PGK_Math::degToRad(15.0f);
         const float tiltSpeed = 5.0f;
 
-        gameObject->onUpdate = [speed, lift, tiltAmount, tiltSpeed](PGK_GameObject* self, float deltaTime) {
-            auto& input = PGK_Input::instance();
+        gameObject->onUpdate = [speed, lift, tiltAmount, tiltSpeed](PGK_GameObject *self, float deltaTime)
+        {
+            auto &input = PGK_Input::instance();
 
             Vec3 position = self->getLocalPosition();
 
             // forward is inverted - the heli.obj model
             Vec3 forward = self->getWorldRotation() * Vec3(0, 0, -1);
-            Vec3 right   = self->getWorldRotation() * Vec3(1, 0,  0);
+            Vec3 right = self->getWorldRotation() * Vec3(1, 0, 0);
 
             forward = forward.normalize();
             right = right.normalize();
@@ -258,28 +321,41 @@ void PGK_Scene::parseComponent(std::shared_ptr<PGK_GameObject> gameObject, const
             bool movingLeft = input.getKey(Qt::Key_A);
             bool movingRight = input.getKey(Qt::Key_D);
 
-            if (movingForward) position -= forward * speed * deltaTime;
-            if (movingBackward) position += forward * speed * deltaTime;
-            if (movingLeft) position += right * speed * deltaTime;
-            if (movingRight) position -= right * speed * deltaTime;
-            if (input.getKey(Qt::Key_Space)) position.y += lift * deltaTime;
-            if (input.getKey(Qt::Key_Control)) position.y -= lift * deltaTime;
+            if (movingForward)
+                position -= forward * speed * deltaTime;
+            if (movingBackward)
+                position += forward * speed * deltaTime;
+            if (movingLeft)
+                position += right * speed * deltaTime;
+            if (movingRight)
+                position -= right * speed * deltaTime;
+            if (input.getKey(Qt::Key_Space))
+                position.y += lift * deltaTime;
+            if (input.getKey(Qt::Key_Control))
+                position.y -= lift * deltaTime;
 
             static Quat baseRotation = Quat::IDENTITY;
             static Quat currentTilt = Quat::IDENTITY;
 
             float yawDelta = 0.0f;
-            if (input.getKey(Qt::Key_Q)) yawDelta += 1.0f;
-            if (input.getKey(Qt::Key_E)) yawDelta -= 1.0f;
-            if (yawDelta != 0.0f) {
-                baseRotation = Quat(Vec3(0,1,0), yawDelta * deltaTime) * baseRotation;
+            if (input.getKey(Qt::Key_Q))
+                yawDelta += 1.0f;
+            if (input.getKey(Qt::Key_E))
+                yawDelta -= 1.0f;
+            if (yawDelta != 0.0f)
+            {
+                baseRotation = Quat(Vec3(0, 1, 0), yawDelta * deltaTime) * baseRotation;
             }
 
-            Vec3 targetTilt(0,0,0);
-            if (movingForward)  targetTilt.x += tiltAmount;
-            if (movingBackward) targetTilt.x -= tiltAmount;
-            if (movingLeft)     targetTilt.z -= tiltAmount;
-            if (movingRight)    targetTilt.z += tiltAmount;
+            Vec3 targetTilt(0, 0, 0);
+            if (movingForward)
+                targetTilt.x += tiltAmount;
+            if (movingBackward)
+                targetTilt.x -= tiltAmount;
+            if (movingLeft)
+                targetTilt.z -= tiltAmount;
+            if (movingRight)
+                targetTilt.z += tiltAmount;
 
             Quat targetTiltQuat = Quat(targetTilt, T_Quat<float>::RotationOrder::XYZ);
 
@@ -292,34 +368,41 @@ void PGK_Scene::parseComponent(std::shared_ptr<PGK_GameObject> gameObject, const
         };
     }
 
-    if(type == "Rotor"){
+    if (type == "Rotor")
+    {
         float speed = properties.value("speed").toDouble();
 
-        gameObject->onUpdate = [speed](PGK_GameObject* self, float deltaTime) {
-            auto& input = PGK_Input::instance();
+        gameObject->onUpdate = [speed](PGK_GameObject *self, float deltaTime)
+        {
+            auto &input = PGK_Input::instance();
             bool movingUp = input.getKey(Qt::Key_Space);
             bool movingDown = input.getKey(Qt::Key_Control);
 
             Vec3 rotation = self->getLocalEuler();
 
-            if(movingUp) rotation.y += (speed*2) * deltaTime;
-            else if(movingDown) rotation.y += (speed/2) * deltaTime;
-            else rotation.y += speed * deltaTime;
+            if (movingUp)
+                rotation.y += (speed * 2) * deltaTime;
+            else if (movingDown)
+                rotation.y += (speed / 2) * deltaTime;
+            else
+                rotation.y += speed * deltaTime;
 
             self->setLocalEuler(rotation, Quat::RotationOrder::XYZ);
         };
     }
 
-    if (type == "TankControls") {
+    if (type == "TankControls")
+    {
         const float speed = properties.value("speed").toDouble();
 
-        gameObject->onUpdate = [speed, this](PGK_GameObject* self, float deltaTime) {
-            auto& input = PGK_Input::instance();
+        gameObject->onUpdate = [speed, this](PGK_GameObject *self, float deltaTime)
+        {
+            auto &input = PGK_Input::instance();
 
             Vec3 position = self->getLocalPosition();
 
             Vec3 forward = self->getWorldRotation() * Vec3(0, 0, 1);
-            Vec3 right   = self->getWorldRotation() * Vec3(1, 0,  0);
+            Vec3 right = self->getWorldRotation() * Vec3(1, 0, 0);
 
             forward = forward.normalize();
             right = right.normalize();
@@ -329,15 +412,20 @@ void PGK_Scene::parseComponent(std::shared_ptr<PGK_GameObject> gameObject, const
             bool movingForward = input.getKey(Qt::Key_W);
             bool movingBackward = input.getKey(Qt::Key_S);
 
-            if (movingForward) position += forward * speed * deltaTime;
-            if (movingBackward) position -= forward * speed * deltaTime;
+            if (movingForward)
+                position += forward * speed * deltaTime;
+            if (movingBackward)
+                position -= forward * speed * deltaTime;
 
             static Quat baseRotation = Quat::IDENTITY;
             float yawDelta = 0.0f;
-            if (input.getKey(Qt::Key_A)) yawDelta += 1.0f;
-            if (input.getKey(Qt::Key_D)) yawDelta -= 1.0f;
-            if (yawDelta != 0.0f) {
-                baseRotation = Quat(Vec3(0,1,0), yawDelta * deltaTime) * baseRotation;
+            if (input.getKey(Qt::Key_A))
+                yawDelta += 1.0f;
+            if (input.getKey(Qt::Key_D))
+                yawDelta -= 1.0f;
+            if (yawDelta != 0.0f)
+            {
+                baseRotation = Quat(Vec3(0, 1, 0), yawDelta * deltaTime) * baseRotation;
             }
 
             Vec3 rayOrigin = position;
@@ -345,7 +433,8 @@ void PGK_Scene::parseComponent(std::shared_ptr<PGK_GameObject> gameObject, const
             float rayLength = 20.0f;
 
             RaycastHit hit = PGK_Raycast::raycast(rayOrigin, rayDirection, rayLength, this->rootObject->getChildren());
-            if (hit.hit) {
+            if (hit.hit)
+            {
                 position.y = hit.point.y + 1.1f;
 
                 Vec3 up = hit.normal;
@@ -355,7 +444,9 @@ void PGK_Scene::parseComponent(std::shared_ptr<PGK_GameObject> gameObject, const
                 Quat newRotation = baseRotation * self->getWorldRotation();
 
                 self->setLocalRotation(newRotation);
-            }else{
+            }
+            else
+            {
                 position.y -= 9.81f * deltaTime;
             }
 
@@ -364,7 +455,8 @@ void PGK_Scene::parseComponent(std::shared_ptr<PGK_GameObject> gameObject, const
     }
 }
 
-void PGK_Scene::parseLight(const QJsonObject& light) {
+void PGK_Scene::parseLight(const QJsonObject &light)
+{
     auto phongLight = std::make_shared<PGK_Light>();
 
     QJsonArray positionArray = light.value("position").toArray();
@@ -376,90 +468,120 @@ void PGK_Scene::parseLight(const QJsonObject& light) {
     phongLight->diffusePower = light.value("intensity").toDouble();
     phongLight->ambientColor = this->sceneBackgroundColor;
 
-    if (light.contains("components")) {
+    if (light.contains("components"))
+    {
         QJsonArray componentsArray = light.value("components").toArray();
-        for (const QJsonValue& componentValue : componentsArray) {
+        for (const QJsonValue &componentValue : componentsArray)
+        {
             QJsonObject component = componentValue.toObject();
             parseComponent(phongLight, component);
         }
     }
-    if (light.contains("attachTo")) {
+    if (light.contains("attachTo"))
+    {
         QJsonArray attachArray = light.value("attachTo").toArray();
-        for (const QJsonValue& attachValue : attachArray) {
+        for (const QJsonValue &attachValue : attachArray)
+        {
             QJsonObject attach = attachValue.toObject();
             QString parentName = attach.value("object").toString();
             QJsonArray positionArray = attach.value("position").toArray();
             Vec3 offset(positionArray[0].toDouble(), positionArray[1].toDouble(), positionArray[2].toDouble());
 
             auto parent = findObjectByName(parentName);
-            if (parent) {
+            if (parent)
+            {
                 parent->addChild(phongLight);
                 phongLight->setLocalPosition(offset);
-            } else {
+            }
+            else
+            {
                 qWarning() << "Parent object not found:" << parentName;
             }
         }
     }
 
-    if(light.contains("type")){
+    if (light.contains("type"))
+    {
         QString type = light.value("type").toString();
-        if(type == "Directional") phongLight->lightType = PGK_Light::Type::Directional;
-        if(type == "Point") phongLight->lightType = PGK_Light::Type::Point;
-        if(type == "Spot") phongLight->lightType = PGK_Light::Type::Spot;
+        if (type == "Directional")
+            phongLight->lightType = PGK_Light::Type::Directional;
+        if (type == "Point")
+            phongLight->lightType = PGK_Light::Type::Point;
+        if (type == "Spot")
+            phongLight->lightType = PGK_Light::Type::Spot;
     }
 
-    if(light.contains("decay")) phongLight->decay = light.value("decay").toDouble();
-    if(light.contains("distance")) phongLight->distance = light.value("distance").toDouble();
-    if(light.contains("angle")) phongLight->angle = light.value("angle").toDouble();
-    if(light.contains("penumbra")) phongLight->penumbra = light.value("penumbra").toDouble();
+    if (light.contains("decay"))
+        phongLight->decay = light.value("decay").toDouble();
+    if (light.contains("distance"))
+        phongLight->distance = light.value("distance").toDouble();
+    if (light.contains("angle"))
+        phongLight->angle = light.value("angle").toDouble();
+    if (light.contains("penumbra"))
+        phongLight->penumbra = light.value("penumbra").toDouble();
 
     bool castShadows = light.value("cast_shadow").toBool();
-    if(castShadows) phongLight->castShadows = true;
+    if (castShadows)
+        phongLight->castShadows = true;
 
     lights.push_back(phongLight);
 }
 
-void PGK_Scene::parseCamera(const QJsonObject& camera) {
+void PGK_Scene::parseCamera(const QJsonObject &camera)
+{
     QString type = camera.value("type").toString();
     QJsonObject properties = camera.value("properties").toObject();
 
-    if (type == "AttachedCamera") {
+    if (type == "AttachedCamera")
+    {
         QString targetName = properties.value("target").toString();
         QJsonArray offsetArray = properties.value("offset").toArray();
         Vec3 offset(offsetArray[0].toDouble(), offsetArray[1].toDouble(), offsetArray[2].toDouble());
 
         auto target = findObjectByName(targetName);
-        if (target) {
+        if (target)
+        {
             this->camera->setMode(PGK_Camera::Mode::Attached);
             this->camera->setLocalPosition(offset);
             target->addChild(this->camera);
-        } else {
+        }
+        else
+        {
             qWarning() << "Camera target not found:" << targetName;
         }
-    } else if (type == "FreeFlyCamera") {
+    }
+    else if (type == "FreeFlyCamera")
+    {
         this->camera->setMode(PGK_Camera::Mode::Free);
-        if(camera.contains("position")){
+        if (camera.contains("position"))
+        {
             QJsonArray positionArray = camera.value("position").toArray();
             Vec3 position(positionArray[0].toDouble(), positionArray[1].toDouble(), positionArray[2].toDouble());
             this->camera->setLocalPosition(position);
         }
-        if(camera.contains("speed")){
+        if (camera.contains("speed"))
+        {
             this->camera->setMoveSpeed(camera.value("speed").toDouble());
         }
     }
     this->camera->setName("camera");
 }
 
-std::shared_ptr<PGK_GameObject> PGK_Scene::findObjectByName(const QString& name) {
+std::shared_ptr<PGK_GameObject> PGK_Scene::findObjectByName(const QString &name)
+{
     // recursive search
     std::function<std::shared_ptr<PGK_GameObject>(std::shared_ptr<PGK_GameObject>)> search;
-    search = [&search, &name](std::shared_ptr<PGK_GameObject> obj) -> std::shared_ptr<PGK_GameObject> {
-        if (obj->getName() == name) {
+    search = [&search, &name](std::shared_ptr<PGK_GameObject> obj) -> std::shared_ptr<PGK_GameObject>
+    {
+        if (obj->getName() == name)
+        {
             return obj;
         }
-        for (const auto& child : obj->getChildren()) {
+        for (const auto &child : obj->getChildren())
+        {
             auto result = search(child);
-            if (result) {
+            if (result)
+            {
                 return result;
             }
         }
