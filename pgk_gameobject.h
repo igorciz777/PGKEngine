@@ -52,6 +52,7 @@ public:
     bool receiveShadows=false;
     bool castShadows=false;
     bool isVisible=true;
+    bool isStatic=false;
 
 private:
     QString name;
@@ -61,7 +62,11 @@ private:
     Quat localRotation;
     Vec3 localScale;
 
+    bool staticInit = false;
+
     std::vector<Mesh> gameObjectMesh;
+    Mat4 cachedWorldTransform;
+    Mat4 cachedNormalMatrix;
 
     PGK_GameObject* parent;
     std::vector<std::shared_ptr<PGK_GameObject>> children;

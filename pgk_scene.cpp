@@ -172,6 +172,10 @@ void PGK_Scene::parseGameObject(const QJsonObject& object) {
         gameObject->isVisible = false;
     }
 
+    if(object.contains("type"))
+    {
+        if(object.value("type").toString()=="StaticObject") gameObject->isStatic = true;
+    }
 
     gameObject->setName(name);
 
