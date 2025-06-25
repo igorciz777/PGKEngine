@@ -289,6 +289,12 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
                         std::min(255, (phongColor.y * texColor.y) >> 8),
                         std::min(255, (phongColor.z * texColor.z) >> 8));
 
+                    if(g_pgkCore.RENDER_FOG)
+                    {
+                        const Vec3 surface = triangle.v0 * alpha + triangle.v1 * beta + triangle.v2 * gamma;
+                        finalColor = PGK_Draw::calculateFog(finalColor, surface, cameraPos);
+                    }
+
                     drawPixel(target, finalColor, x, y);
                 }
             }
@@ -391,9 +397,9 @@ cVec3 PGK_Draw::calculateBlinnPhongLighting(const std::shared_ptr<PGK_Light> &li
     const float specularStrength = PGK_Math::fastpow(std::max(0.0f, normal.dot(halfDir)), light->shininess) * light->specularPower;
 
     const cVec3 result(
-        std::min(255.0f, ambientStrength * light->ambientColor->x + diffuseStrength * light->diffuseColor.x + specularStrength * light->specularColor.x) * attenuation * spotEffect,
-        std::min(255.0f, ambientStrength * light->ambientColor->y + diffuseStrength * light->diffuseColor.y + specularStrength * light->specularColor.y) * attenuation * spotEffect,
-        std::min(255.0f, ambientStrength * light->ambientColor->z + diffuseStrength * light->diffuseColor.z + specularStrength * light->specularColor.z) * attenuation * spotEffect);
+        static_cast<uint16_t>(ambientStrength * light->ambientColor->x + diffuseStrength * light->diffuseColor.x + specularStrength * light->specularColor.x) * attenuation * spotEffect,
+        static_cast<uint16_t>(ambientStrength * light->ambientColor->y + diffuseStrength * light->diffuseColor.y + specularStrength * light->specularColor.y) * attenuation * spotEffect,
+        static_cast<uint16_t>(ambientStrength * light->ambientColor->z + diffuseStrength * light->diffuseColor.z + specularStrength * light->specularColor.z) * attenuation * spotEffect);
 
     return result;
 }
@@ -407,9 +413,9 @@ cVec3 PGK_Draw::calculateFlatLighting(const std::shared_ptr<PGK_Light> &light, V
     const float diffuseStrength = std::max(0.0f, normal.dot(lightDir)) * light->diffusePower;
 
     const cVec3 result(
-        std::min(255.0f, ambientStrength * light->ambientColor->x + diffuseStrength * light->diffuseColor.x) * attenuation * spotEffect,
-        std::min(255.0f, ambientStrength * light->ambientColor->y + diffuseStrength * light->diffuseColor.y) * attenuation * spotEffect,
-        std::min(255.0f, ambientStrength * light->ambientColor->z + diffuseStrength * light->diffuseColor.z) * attenuation * spotEffect);
+        static_cast<uint16_t>(ambientStrength * light->ambientColor->x + diffuseStrength * light->diffuseColor.x) * attenuation * spotEffect,
+        static_cast<uint16_t>(ambientStrength * light->ambientColor->y + diffuseStrength * light->diffuseColor.y) * attenuation * spotEffect,
+        static_cast<uint16_t>(ambientStrength * light->ambientColor->z + diffuseStrength * light->diffuseColor.z) * attenuation * spotEffect);
 
     return result;
 }
@@ -448,11 +454,27 @@ cVec3 PGK_Draw::calculateGGXLighting(const std::shared_ptr<PGK_Light> &light, Ve
     const float diffuseStrength = dotNL * light->diffusePower;
 
     cVec3 result(
-        std::min(255.0f, ambientStrength * light->ambientColor->x + diffuseStrength * light->diffuseColor.x + ggx * light->specularColor.x) * attenuation * spotEffect,
-        std::min(255.0f, ambientStrength * light->ambientColor->y + diffuseStrength * light->diffuseColor.y + ggx * light->specularColor.y) * attenuation * spotEffect,
-        std::min(255.0f, ambientStrength * light->ambientColor->z + diffuseStrength * light->diffuseColor.z + ggx * light->specularColor.z) * attenuation * spotEffect);
+        static_cast<uint16_t>(ambientStrength * light->ambientColor->x + diffuseStrength * light->diffuseColor.x + ggx * light->specularColor.x) * attenuation * spotEffect,
+        static_cast<uint16_t>(ambientStrength * light->ambientColor->y + diffuseStrength * light->diffuseColor.y + ggx * light->specularColor.y) * attenuation * spotEffect,
+        static_cast<uint16_t>(ambientStrength * light->ambientColor->z + diffuseStrength * light->diffuseColor.z + ggx * light->specularColor.z) * attenuation * spotEffect);
 
     return result;
+}
+
+cVec3 PGK_Draw::calculateFog(const cVec3 &color, const Vec3 &surfacePos, const Vec3 &cameraPos, float fogStart, float fogEnd)
+{
+    float distance = surfacePos.distance(cameraPos);
+    if (distance < fogStart)
+        return color;
+
+    float fogFactor = (distance - fogStart) / (fogEnd - fogStart);
+    fogFactor = std::clamp(fogFactor, 0.0f, 1.0f);
+
+    cVec3 fogColor(200, 200, 200);
+    return cVec3(
+        static_cast<uint16_t>(color.x * (1.0f - fogFactor) + fogColor.x * fogFactor),
+        static_cast<uint16_t>(color.y * (1.0f - fogFactor) + fogColor.y * fogFactor),
+        static_cast<uint16_t>(color.z * (1.0f - fogFactor) + fogColor.z * fogFactor));
 }
 
 void PGK_Draw::getLightTypeVariables(const std::shared_ptr<PGK_Light> &light, const Vec3 &surfacePos, Vec3 &lightDir, float &attenuation, float &spotEffect)

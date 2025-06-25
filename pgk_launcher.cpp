@@ -28,6 +28,7 @@ PGK_Launcher::PGK_Launcher(QWidget *parent)
     // settingsRightLayout.addWidget(&scalingCheck);
     settingsRightLayout.addWidget(&texFilterCheck);
     settingsRightLayout.addWidget(&raycastShadowCheck);
+    settingsRightLayout.addWidget(&renderFogCheck);
 
     QLabel shadingModeLabel("Shading Mode:");
     settingsRightLayout.addWidget(&shadingModeLabel);
@@ -110,6 +111,7 @@ QString PGK_Launcher::getCoreSettings() const
     g_pgkCore.TEX_FILTERING = this->texFilterCheck.isChecked();
     g_pgkCore.SHADING_MODE = this->shadingModeCBox.currentIndex();
     g_pgkCore.RAYCAST_SHADOWS = this->raycastShadowCheck.isChecked();
+    g_pgkCore.RENDER_FOG = this->renderFogCheck.isChecked();
     g_pgkCore.ASPECT_RATIO = (float)g_pgkCore.RESOLUTION_WIDTH / (float)g_pgkCore.RESOLUTION_HEIGHT;
     return sceneListWidget.currentItem()->text();
 }

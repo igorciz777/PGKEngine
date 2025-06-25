@@ -36,10 +36,11 @@ private:
 
     QVBoxLayout settingsRightLayout = QVBoxLayout();
     QCheckBox windowedCheck = QCheckBox("Windowed");
-    QCheckBox scalingCheck = QCheckBox("Scalable window");
-    QCheckBox texFilterCheck = QCheckBox("Texture filtering");
+    QCheckBox scalingCheck = QCheckBox("Scalable Window");
+    QCheckBox texFilterCheck = QCheckBox("Texture Filtering");
     QComboBox shadingModeCBox = QComboBox();
-    QCheckBox raycastShadowCheck = QCheckBox("Raycast shadows");
+    QCheckBox raycastShadowCheck = QCheckBox("Raycast Shadows");
+    QCheckBox renderFogCheck = QCheckBox("Render Fog");
 
     QListWidget sceneListWidget = QListWidget();
 

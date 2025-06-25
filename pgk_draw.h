@@ -22,6 +22,7 @@ namespace PGK_Draw
     inline cVec3 calculateBlinnPhongLighting(const std::shared_ptr<PGK_Light> &light, Vec3 &lightDir, const Vec3 &viewDir, const Vec3 &normal, const Vec3 &surfacePos);
     inline cVec3 calculateFlatLighting(const std::shared_ptr<PGK_Light> &light, Vec3 &lightDir, const Vec3 &normal, const Vec3 &surfacePos);
     inline cVec3 calculateGGXLighting(const std::shared_ptr<PGK_Light> &light, Vec3 &lightDir, const Vec3 &viewDir, const Vec3 &normal, const Vec3 &surfacePos);
+    inline cVec3 calculateFog(const cVec3 &color, const Vec3 &surfacePos, const Vec3 &cameraPos, float fogStart = 50.0f, float fogEnd = 100.0f);
     inline void getLightTypeVariables(const std::shared_ptr<PGK_Light> &light, const Vec3 &surfacePos, Vec3 &lightDir, float &attenuation, float &spotEffect);
 };
 
