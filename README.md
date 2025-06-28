@@ -18,8 +18,8 @@ This project is mostly a learning experience and in no way a feature-complete an
 - Z-buffering
 - Flat, Blinn-Phong, GGX shading
 - Freefly and Attached camera modes
-- Parsing .obj and .mtl files (mtl WIP)
-- Texture mapping
+- Parsing .obj and .mtl files
+- Texture and Normal mapping
 - Raycast shadows
 
 # Screenshot examples
