@@ -7,10 +7,9 @@
                 "type": "GameObject",
                 "name": "Bunny",
                 "mesh": "bunny.obj",
-                "texture": "gray.jpg",
                 "position": [0, 0, 0],
                 "scale": [5, 5, 5],
-                "cast_shadow": false,
+                "cast_shadow": true,
                 "receive_shadow": false,
                 "components": [
                     {
@@ -25,9 +24,8 @@
                 "type": "StaticObject",
                 "name": "Room",
                 "mesh": "room.obj",
-                "texture": "gray.jpg",
                 "position": [0, 0, 0],
-                "cast_shadow": true,
+                "cast_shadow": false,
                 "receive_shadow": true
             },
             {

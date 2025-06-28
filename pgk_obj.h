@@ -15,15 +15,24 @@ struct Vertex
 
 struct Material
 {
-    Vec3 ambient = {0.2f, 0.2f, 0.2f};
-    Vec3 diffuse = {0.8f, 0.8f, 0.8f};
+    Vec3 ambient = {1.0f, 1.0f, 1.0f};
+    Vec3 diffuse = {1.0f, 1.0f, 1.0f};
     Vec3 specular = {1.0f, 1.0f, 1.0f};
-    float shininess = 32.0f;
+    float specularExponent = 1.0f;
     bool smoothShading = false;
     bool hasNormalMap = false;
+    bool hasSpecularMap = false;
+    bool hasSpecularHighlightMap = false;
+    bool hasAlphaMap = false;
+    bool hasDisplacementMap = false;
+    bool hasTexture = false;
     float normalMapStrength = 1.0f;
     std::shared_ptr<QImage> texture;
     std::shared_ptr<QImage> normalMap;
+    std::shared_ptr<QImage> specularMap;
+    std::shared_ptr<QImage> specularHighlightMap;
+    std::shared_ptr<QImage> alphaMap;
+    std::shared_ptr<QImage> displacementMap;
 };
 
 struct Mesh

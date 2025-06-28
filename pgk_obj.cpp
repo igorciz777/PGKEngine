@@ -135,22 +135,58 @@ void ObjLoader::parseMtlFile(const std::string& filename, std::map<std::string, 
         } else if (type == "Ks") {
             iss >> currentMtl.specular.x >> currentMtl.specular.y >> currentMtl.specular.z;
         } else if (type == "Ns") {
-            iss >> currentMtl.shininess;
-        // TODO: check for file not existing, QImage sets a -1x-1 image
-        } else if (type == "map_Kd") {
+            iss >> currentMtl.specularExponent;
+        } else if (type == "map_Kd" || type == "map_Ka") { //ambient or diffuse texture
             std::string texFile;
             iss >> texFile;
             std::shared_ptr<QImage> newTexture = std::make_shared<QImage>(QString::fromStdString(basePath + texFile));
-            currentMtl.texture = newTexture;
-        } else if (type == "map_Bump" || type == "bump" || type == "map_bump") {
+            if (newTexture && !newTexture->isNull()) {
+                currentMtl.texture = newTexture;
+                currentMtl.hasTexture = true;
+            }
+        } else if (type == "map_Bump" || type == "bump" || type == "map_bump") { //normal map
             std::string bmParameter;
             iss >> bmParameter;
             if(bmParameter == "-bm") iss >> currentMtl.normalMapStrength;
             std::string normalMapFile;
             iss >> normalMapFile;
             std::shared_ptr<QImage> normalMap = std::make_shared<QImage>(QString::fromStdString(basePath + normalMapFile));
-            currentMtl.normalMap = normalMap;
-            currentMtl.hasNormalMap = true;
+            if (normalMap && !normalMap->isNull()) {
+                currentMtl.normalMap = normalMap;
+                currentMtl.hasNormalMap = true;
+            }
+        } else if (type == "map_Ks") { // specular color map
+            std::string specularMapFile;
+            iss >> specularMapFile;
+            std::shared_ptr<QImage> specularMap = std::make_shared<QImage>(QString::fromStdString(basePath + specularMapFile));
+            if (specularMap && !specularMap->isNull()) {
+                currentMtl.specularMap = specularMap;
+                currentMtl.hasSpecularMap = true;
+            }
+        } else if (type == "map_Ns") { // specular highlight map
+            std::string specularHighlightMapFile;
+            iss >> specularHighlightMapFile;
+            std::shared_ptr<QImage> specularHighlightMap = std::make_shared<QImage>(QString::fromStdString(basePath + specularHighlightMapFile));
+            if (specularHighlightMap && !specularHighlightMap->isNull()) {
+                currentMtl.specularHighlightMap = specularHighlightMap;
+                currentMtl.hasSpecularHighlightMap = true;
+            }
+        } else if (type == "map_d") { // alpha map
+            std::string alphaMapFile;
+            iss >> alphaMapFile;
+            std::shared_ptr<QImage> alphaMap = std::make_shared<QImage>(QString::fromStdString(basePath + alphaMapFile));
+            if (alphaMap && !alphaMap->isNull()) {
+                currentMtl.alphaMap = alphaMap;
+                currentMtl.hasAlphaMap = true;
+            }
+        } else if (type == "disp") { // displacement map
+            std::string dispFile;
+            iss >> dispFile;
+            std::shared_ptr<QImage> dispMap = std::make_shared<QImage>(QString::fromStdString(basePath + dispFile));
+            if (dispMap && !dispMap->isNull()) {
+                currentMtl.displacementMap = dispMap;
+                currentMtl.hasDisplacementMap = true;
+            }
         }
     }
 

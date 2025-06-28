@@ -203,12 +203,13 @@ void PGK_Scene::parseGameObject(const QJsonObject &object)
     if (object.contains("mesh"))
     {
         std::vector<Mesh> meshes = ObjLoader::loadObj(QDir::currentPath().toStdString() + "/" + meshPath.toStdString());
-        if (object.contains("texture"))
+        if (object.contains("texture")) //texture overwrite
         {
             auto texture = std::make_shared<QImage>(QImage(texturePath));
             for (auto &mesh : meshes)
             {
                 mesh.material.texture = texture;
+                mesh.material.hasTexture = true;
             }
         }
         gameObject->setMeshes(meshes);

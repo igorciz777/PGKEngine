@@ -89,9 +89,6 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
 
     const Vec3 viewDir = (cameraPos - triangle.worldPosition).normalize();
 
-    const int texWidth = triangle.material->texture->width();
-    const int texHeight = triangle.material->texture->height();
-
     Vec3 normal;
     cVec3 phongColor(0, 0, 0);
     bool inShadow = false;
@@ -126,7 +123,7 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
             }
             }
 
-            cVec3 lightColor = PGK_Draw::calculateFlatLighting(light, lightDir, normal, surface);
+            cVec3 lightColor = PGK_Draw::calculateFlatLighting(light, lightDir, normal, surface, *triangle.material);
             phongColor += lightColor;
 
             if (!g_pgkCore.RAYCAST_SHADOWS)
@@ -238,8 +235,8 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
                             }
                             }
                             cVec3 lightColor;
-                            if(g_pgkCore.SHADING_MODE == 1) lightColor = PGK_Draw::calculateBlinnPhongLighting(light, lightDir, viewDir, normal, surface);
-                            else lightColor = PGK_Draw::calculateGGXLighting(light, lightDir, viewDir, normal, surface);
+                            if(g_pgkCore.SHADING_MODE == 1) lightColor = PGK_Draw::calculateBlinnPhongLighting(light, lightDir, viewDir, normal, surface, *triangle.material);
+                            else lightColor = PGK_Draw::calculateGGXLighting(light, lightDir, viewDir, normal, surface, *triangle.material);
                             phongColor += lightColor;
 
                             if (!g_pgkCore.RAYCAST_SHADOWS)
@@ -274,14 +271,19 @@ void PGK_Draw::drawTriangle(QImage &target, const Triangle &triangle, std::vecto
                     }
 
                     // texture sampling
-                    cVec3 texColor;
-                    if (g_pgkCore.TEX_FILTERING)
-                        texColor = getInterpolatedColor(*triangle.material->texture, u * triangle.material->texture->width(), v * triangle.material->texture->height());
-                    else
+                    cVec3 texColor = cVec3(200, 200, 200); // default to gray if no texture
+                    if(triangle.material->hasTexture)
                     {
-                        const int tx = std::clamp(static_cast<int>(u * texWidth), 0, texWidth - 1);
-                        const int ty = std::clamp(static_cast<int>(v * texHeight), 0, texHeight - 1);
-                        texColor = getColor(*triangle.material->texture, tx, ty);
+                        const int texWidth = triangle.material->texture->width();
+                        const int texHeight = triangle.material->texture->height();
+                        if (g_pgkCore.TEX_FILTERING)
+                            texColor = getInterpolatedColor(*triangle.material->texture, u * triangle.material->texture->width(), v * triangle.material->texture->height());
+                        else
+                        {
+                            const int tx = std::clamp(static_cast<int>(u * texWidth), 0, texWidth - 1);
+                            const int ty = std::clamp(static_cast<int>(v * texHeight), 0, texHeight - 1);
+                            texColor = getColor(*triangle.material->texture, tx, ty);
+                        }
                     }
 
                     cVec3 finalColor(
@@ -386,7 +388,7 @@ inline cVec3 PGK_Draw::getInterpolatedColor(const QImage &image, float x, float 
     return PGK_Math::interpolatecVec3(p00, p10, p01, p11, a, b);
 }
 
-cVec3 PGK_Draw::calculateBlinnPhongLighting(const std::shared_ptr<PGK_Light> &light, Vec3 &lightDir, const Vec3 &viewDir, const Vec3 &normal, const Vec3 &surfacePos)
+cVec3 PGK_Draw::calculateBlinnPhongLighting(const std::shared_ptr<PGK_Light> &light, Vec3 &lightDir, const Vec3 &viewDir, const Vec3 &normal, const Vec3 &surfacePos, const Material& material)
 {
     float attenuation, spotEffect;
     getLightTypeVariables(light, surfacePos, lightDir, attenuation, spotEffect);
@@ -394,17 +396,17 @@ cVec3 PGK_Draw::calculateBlinnPhongLighting(const std::shared_ptr<PGK_Light> &li
     const float ambientStrength = 0.2f;
     const float diffuseStrength = std::max(0.0f, normal.dot(lightDir)) * light->diffusePower;
     const Vec3 halfDir = (lightDir + viewDir).normalize();
-    const float specularStrength = PGK_Math::fastpow(std::max(0.0f, normal.dot(halfDir)), light->shininess) * light->specularPower;
+    const float specularStrength = PGK_Math::fastpow(std::max(0.0f, normal.dot(halfDir)), material.specularExponent) * light->specularPower;
 
     const cVec3 result(
-        static_cast<uint16_t>(ambientStrength * light->ambientColor->x + diffuseStrength * light->diffuseColor.x + specularStrength * light->specularColor.x) * attenuation * spotEffect,
-        static_cast<uint16_t>(ambientStrength * light->ambientColor->y + diffuseStrength * light->diffuseColor.y + specularStrength * light->specularColor.y) * attenuation * spotEffect,
-        static_cast<uint16_t>(ambientStrength * light->ambientColor->z + diffuseStrength * light->diffuseColor.z + specularStrength * light->specularColor.z) * attenuation * spotEffect);
+        static_cast<uint16_t>(ambientStrength * material.ambient.x * light->ambientColor->x + diffuseStrength * material.diffuse.x * light->diffuseColor.x + specularStrength * material.specular.x * light->specularColor.x) * attenuation * spotEffect,
+        static_cast<uint16_t>(ambientStrength * material.ambient.y * light->ambientColor->y + diffuseStrength * material.diffuse.y * light->diffuseColor.y + specularStrength * material.specular.y * light->specularColor.y) * attenuation * spotEffect,
+        static_cast<uint16_t>(ambientStrength * material.ambient.z * light->ambientColor->z + diffuseStrength * material.diffuse.z * light->diffuseColor.z + specularStrength * material.specular.z * light->specularColor.z) * attenuation * spotEffect);
 
     return result;
 }
 
-cVec3 PGK_Draw::calculateFlatLighting(const std::shared_ptr<PGK_Light> &light, Vec3 &lightDir, const Vec3 &normal, const Vec3 &surfacePos)
+cVec3 PGK_Draw::calculateFlatLighting(const std::shared_ptr<PGK_Light> &light, Vec3 &lightDir, const Vec3 &normal, const Vec3 &surfacePos, const Material& material)
 {
     float attenuation, spotEffect;
     getLightTypeVariables(light, surfacePos, lightDir, attenuation, spotEffect);
@@ -413,20 +415,21 @@ cVec3 PGK_Draw::calculateFlatLighting(const std::shared_ptr<PGK_Light> &light, V
     const float diffuseStrength = std::max(0.0f, normal.dot(lightDir)) * light->diffusePower;
 
     const cVec3 result(
-        static_cast<uint16_t>(ambientStrength * light->ambientColor->x + diffuseStrength * light->diffuseColor.x) * attenuation * spotEffect,
-        static_cast<uint16_t>(ambientStrength * light->ambientColor->y + diffuseStrength * light->diffuseColor.y) * attenuation * spotEffect,
-        static_cast<uint16_t>(ambientStrength * light->ambientColor->z + diffuseStrength * light->diffuseColor.z) * attenuation * spotEffect);
+        static_cast<uint16_t>(ambientStrength * material.ambient.x * light->ambientColor->x + diffuseStrength * material.diffuse.x * light->diffuseColor.x) * attenuation * spotEffect,
+        static_cast<uint16_t>(ambientStrength * material.ambient.y * light->ambientColor->y + diffuseStrength * material.diffuse.y * light->diffuseColor.y) * attenuation * spotEffect,
+        static_cast<uint16_t>(ambientStrength * material.ambient.z * light->ambientColor->z + diffuseStrength * material.diffuse.z * light->diffuseColor.z) * attenuation * spotEffect);
 
     return result;
 }
 
-cVec3 PGK_Draw::calculateGGXLighting(const std::shared_ptr<PGK_Light> &light, Vec3 &lightDir, const Vec3 &viewDir, const Vec3 &normal, const Vec3 &surfacePos)
+cVec3 PGK_Draw::calculateGGXLighting(const std::shared_ptr<PGK_Light> &light, Vec3 &lightDir, const Vec3 &viewDir, const Vec3 &normal, const Vec3 &surfacePos, const Material& material)
 {
     float attenuation, spotEffect;
     getLightTypeVariables(light, surfacePos, lightDir, attenuation, spotEffect);
 
-    float roughness = 1.0f / std::max(1.0f, light->shininess); // Inverse shininess as roughness
-    float F0 = 0.04f;                                          // Typical value for non-metals, could be parameterized
+    // Use material.specularExponent to derive roughness
+    float roughness = 1.0f / std::max(1.0f, material.specularExponent); // Inverse specularExponent as roughness
+    float F0 = 0.04f; // Typical value for non-metals, could be parameterized
 
     Vec3 N = normal;
     Vec3 V = viewDir;
@@ -454,9 +457,9 @@ cVec3 PGK_Draw::calculateGGXLighting(const std::shared_ptr<PGK_Light> &light, Ve
     const float diffuseStrength = dotNL * light->diffusePower;
 
     cVec3 result(
-        static_cast<uint16_t>(ambientStrength * light->ambientColor->x + diffuseStrength * light->diffuseColor.x + ggx * light->specularColor.x) * attenuation * spotEffect,
-        static_cast<uint16_t>(ambientStrength * light->ambientColor->y + diffuseStrength * light->diffuseColor.y + ggx * light->specularColor.y) * attenuation * spotEffect,
-        static_cast<uint16_t>(ambientStrength * light->ambientColor->z + diffuseStrength * light->diffuseColor.z + ggx * light->specularColor.z) * attenuation * spotEffect);
+        static_cast<uint16_t>(ambientStrength * material.ambient.x * light->ambientColor->x + diffuseStrength * material.diffuse.x * light->diffuseColor.x + ggx * material.specular.x * light->specularColor.x) * attenuation * spotEffect,
+        static_cast<uint16_t>(ambientStrength * material.ambient.y * light->ambientColor->y + diffuseStrength * material.diffuse.y * light->diffuseColor.y + ggx * material.specular.y * light->specularColor.y) * attenuation * spotEffect,
+        static_cast<uint16_t>(ambientStrength * material.ambient.z * light->ambientColor->z + diffuseStrength * material.diffuse.z * light->diffuseColor.z + ggx * material.specular.z * light->specularColor.z) * attenuation * spotEffect);
 
     return result;
 }
